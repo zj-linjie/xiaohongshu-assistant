@@ -99,8 +99,6 @@ button {
 .nav-list button,
 .settings-button,
 .project,
-.model-picker,
-.resource-card header,
 .history-card header,
 .recent header,
 .preview header,
@@ -250,7 +248,6 @@ button {
 }
 
 .project-list header button,
-.resource-card header button,
 .history-card header button,
 .recent header button {
   padding: 8px 12px;
@@ -466,7 +463,6 @@ button {
 .soft-button,
 .generate-button,
 .switch-button,
-.advanced-button,
 .preview-tabs button,
 .tab-row button,
 .editor-tools button,
@@ -543,7 +539,6 @@ button {
 .editor header,
 .preview header,
 .recent header,
-.resource-card header,
 .history-card header {
   justify-content: space-between;
 }
@@ -914,7 +909,7 @@ button {
 
 .config-rail {
   display: grid;
-  grid-template-rows: 146px 278px 194px 1fr;
+  grid-template-rows: auto auto minmax(224px, 1fr);
   gap: 12px;
 }
 
@@ -923,120 +918,176 @@ button {
   overflow: hidden;
 }
 
-.model-picker {
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.model-picker label {
-  display: grid;
-  gap: 6px;
-  color: #7b708a;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.model-picker select {
-  width: 182px;
-  height: 39px;
-  border: 0;
-  outline: 0;
-  padding: 0 14px;
-  border-radius: 15px;
-  color: #302747;
-  background: rgba(255, 255, 255, 0.76);
-  box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.8), 5px 6px 13px rgba(113, 85, 135, 0.13);
-  font-size: 13px;
-  font-weight: 900;
-}
-
 .model-card p {
-  margin-top: 9px;
-  width: 172px;
+  margin-top: 8px;
   color: #8b8196;
   font-size: 11px;
-  line-height: 1.42;
+  line-height: 1.45;
   font-weight: 700;
 }
 
-.switch-button {
-  position: absolute;
+.model-route-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
 }
 
-.model-card {
-  position: relative;
+.model-route {
+  padding: 12px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow:
+    6px 8px 16px rgba(120, 91, 145, 0.1),
+    inset 0 2px 7px rgba(255, 255, 255, 0.86);
 }
 
-.model-card .switch-button {
-  right: 16px;
-  bottom: 15px;
-  height: 36px;
-  padding: 0 15px;
+.model-route header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.model-route .soft-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+}
+
+.model-route h3 {
+  margin: 0;
+  color: #3a2f55;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.model-route header span {
+  display: inline-flex;
+  margin-top: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #2a8f7d;
+  background: #d8fbf0;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.provider-toggle,
+.segment-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+  padding: 4px;
+  border-radius: 16px;
+  background: rgba(246, 237, 250, 0.78);
+}
+
+.provider-toggle button,
+.segment-row button {
+  height: 28px;
+  border-radius: 13px;
+  color: #776b86;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.provider-toggle button.selected,
+.segment-row button.selected {
   color: #fff;
   background: linear-gradient(180deg, #d58cff, #ad63df);
-  font-size: 12px;
+  box-shadow:
+    4px 5px 11px rgba(137, 88, 176, 0.22),
+    inset 0 2px 5px rgba(255, 255, 255, 0.48);
 }
 
-.slider-row {
-  display: block;
-  margin-top: 13px;
-}
-
-.slider-row span {
-  display: flex;
-  justify-content: space-between;
-  color: #5e536e;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.slider-row strong {
-  color: #413257;
-  font-size: 12px;
-}
-
-.slider-row input {
-  width: 100%;
-  height: 18px;
-  margin: 7px 0 0;
-  accent-color: #d37eef;
-}
-
-.advanced-button {
+.model-route select,
+.select-field select {
   width: 100%;
   height: 38px;
+  border: 0;
+  outline: 0;
+  padding: 0 12px;
+  border-radius: 15px;
+  color: #302747;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow:
+    inset 0 2px 5px rgba(255, 255, 255, 0.82),
+    5px 6px 13px rgba(113, 85, 135, 0.12);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.model-route select {
+  margin-top: 9px;
+}
+
+.select-field,
+.segment-field {
+  display: block;
   margin-top: 12px;
-  color: #7a62bd;
-  background: linear-gradient(145deg, #f1e9ff, #fff8ff);
-  font-size: 12px;
 }
 
-.meter-row {
-  display: grid;
-  grid-template-columns: 72px 1fr 74px;
-  gap: 8px;
+.select-field span,
+.segment-field > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #5e536e;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.segment-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 0;
+}
+
+.toggle-line {
+  width: 100%;
+  height: 39px;
+  display: flex;
   align-items: center;
-  margin-top: 13px;
-  color: #4d435d;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 0 12px 0 14px;
+  border-radius: 16px;
+  color: #5c506e;
+  background: rgba(255, 255, 255, 0.66);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 900;
+  box-shadow:
+    inset 0 2px 6px rgba(255, 255, 255, 0.86),
+    5px 6px 13px rgba(116, 88, 140, 0.1);
 }
 
-.meter-row i {
-  height: 9px;
+.toggle-line b {
+  min-width: 44px;
+  padding: 5px 9px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #6fe2a9 var(--meter), #efe8f4 var(--meter));
-  box-shadow: inset 0 1px 2px rgba(92, 78, 108, 0.1);
+  color: #877796;
+  background: #efe7f5;
+  font-size: 11px;
+  text-align: center;
 }
 
-.meter-row i.lavender { background: linear-gradient(90deg, #a579ec var(--meter), #efe8f4 var(--meter)); }
-.meter-row i.yellow { background: linear-gradient(90deg, #ffc55e var(--meter), #efe8f4 var(--meter)); }
-.meter-row i.blue { background: linear-gradient(90deg, #73b8ff var(--meter), #efe8f4 var(--meter)); }
+.toggle-line.enabled b {
+  color: #218a73;
+  background: #c9f8e9;
+}
 
-.meter-row strong {
-  color: #7f748d;
-  font-size: 11px;
-  text-align: right;
+.cli-preview {
+  display: block;
+  margin-top: 11px;
+  padding: 10px 11px;
+  border-radius: 16px;
+  color: #5a4d69;
+  background: rgba(255, 248, 253, 0.78);
+  box-shadow: inset 0 2px 5px rgba(179, 151, 187, 0.11);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.45;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .history-card ol {

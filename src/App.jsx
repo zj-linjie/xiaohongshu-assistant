@@ -28,7 +28,7 @@ const logs = [
   ["10:24", `生成完成：${summerTopic}`, "mint"],
   ["10:22", "开始生成内容...", "blue"],
   ["10:21", "导入参考素材：穿搭参考图.jpg", "pink"],
-  ["10:20", "切换模型：Mint-Writer 2.0", "yellow"],
+  ["10:20", "切换文案模型：Codex CLI / gpt-5-codex", "yellow"],
   ["10:18", `新建项目：${summerTopic}`, "mint"],
 ];
 
@@ -39,37 +39,118 @@ const taskCards = [
   { title: "轻便出行搭配", meta: "5月9日 14:12", status: "已完成", image: "/assets/spring-outfit.png" },
 ];
 
+const textModelOptions = {
+  local: ["Codex CLI / gpt-5-codex", "Ollama / qwen3:14b", "LM Studio / local"],
+  cloud: ["OpenAI API / gpt-5.1", "OpenAI API / gpt-4.1", "兼容 API / custom"],
+};
+
+const imageModelOptions = {
+  local: ["Codex image CLI", "ComfyUI CLI", "本地兼容图像 CLI"],
+  cloud: ["OpenAI Images API", "Gemini API", "兼容 API / image"],
+};
+
+const providerLabels = {
+  local: "本地 CLI",
+  cloud: "云端 API",
+};
+
+const sandboxOptions = [
+  { value: "read-only", label: "read-only" },
+  { value: "workspace-write", label: "workspace-write" },
+  { value: "danger-full-access", label: "danger-full-access" },
+];
+
+const approvalOptions = [
+  { value: "untrusted", label: "untrusted" },
+  { value: "on-request", label: "on-request" },
+  { value: "never", label: "never" },
+];
+
 function SoftIcon({ children, tone = "mint" }) {
   return <span className={`soft-icon ${tone}`}>{children}</span>;
 }
 
-function Slider({ label, value, min = 0, max = 1, step = 0.01, onChange }) {
+function SegmentedControl({ label, value, options, onChange }) {
   return (
-    <label className="slider-row">
-      <span>
-        {label}
-        <strong>{value}</strong>
-      </span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
+    <div className="segment-field">
+      <span>{label}</span>
+      <div className="segment-row">
+        {options.map((option) => (
+          <button
+            key={option}
+            className={value === option ? "selected" : ""}
+            onClick={() => onChange(option)}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SelectField({ label, value, options, onChange }) {
+  return (
+    <label className="select-field">
+      <span>{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)}>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </label>
+  );
+}
+
+function ModelRoute({ title, icon, tone, provider, setProvider, model, setModel, options }) {
+  const activeOptions = options[provider];
+
+  return (
+    <article className="model-route">
+      <header>
+        <SoftIcon tone={tone}>{icon}</SoftIcon>
+        <div>
+          <h3>{title}</h3>
+          <span>{providerLabels[provider]}</span>
+        </div>
+      </header>
+      <div className="provider-toggle" aria-label={`${title}运行方式`}>
+        {Object.keys(providerLabels).map((key) => (
+          <button
+            key={key}
+            className={provider === key ? "selected" : ""}
+            onClick={() => {
+              setProvider(key);
+              setModel(options[key][0]);
+            }}
+          >
+            {providerLabels[key]}
+          </button>
+        ))}
+      </div>
+      <select value={model} onChange={(event) => setModel(event.target.value)}>
+        {activeOptions.map((option) => (
+          <option key={option}>{option}</option>
+        ))}
+      </select>
+    </article>
   );
 }
 
 export function App() {
   const [selectedNav, setSelectedNav] = useState("workspace");
   const [selectedTab, setSelectedTab] = useState("标题");
-  const [model, setModel] = useState("Mint-Writer 2.0");
-  const [temp, setTemp] = useState("0.75");
-  const [topP, setTopP] = useState("0.90");
-  const [length, setLength] = useState("1024");
-  const [penalty, setPenalty] = useState("1.10");
+  const [textProvider, setTextProvider] = useState("local");
+  const [imageProvider, setImageProvider] = useState("cloud");
+  const [textModel, setTextModel] = useState(textModelOptions.local[0]);
+  const [imageModel, setImageModel] = useState(imageModelOptions.cloud[0]);
+  const [sandboxMode, setSandboxMode] = useState("workspace-write");
+  const [approvalPolicy, setApprovalPolicy] = useState("on-request");
+  const [reasoningEffort, setReasoningEffort] = useState("medium");
+  const [verbosity, setVerbosity] = useState("medium");
+  const [webSearch, setWebSearch] = useState(false);
   const [draft, setDraft] = useState(summerInspiration);
 
   const navLabel = useMemo(
@@ -266,47 +347,67 @@ export function App() {
       <aside className="config-rail" aria-label="右侧配置栏">
         <section className="model-card clay-panel">
           <h2>模型配置</h2>
-          <div className="model-picker">
-            <SoftIcon tone="mint">机</SoftIcon>
-            <label>
-              当前模型
-              <select value={model} onChange={(event) => setModel(event.target.value)}>
-                <option>Mint-Writer 2.0</option>
-                <option>Clay-Creator 1.8</option>
-                <option>Pastel-Pro 3.1</option>
-              </select>
-            </label>
+          <p>分别指定文案与图片生成通道，支持本地 CLI 或云端 API。</p>
+          <div className="model-route-list">
+            <ModelRoute
+              title="文案生成"
+              icon="文"
+              tone="mint"
+              provider={textProvider}
+              setProvider={setTextProvider}
+              model={textModel}
+              setModel={setTextModel}
+              options={textModelOptions}
+            />
+            <ModelRoute
+              title="图片生成"
+              icon="图"
+              tone="pink"
+              provider={imageProvider}
+              setProvider={setImageProvider}
+              model={imageModel}
+              setModel={setImageModel}
+              options={imageModelOptions}
+            />
           </div>
-          <p>擅长小红书风格文案创作，语句通顺，种草力强。</p>
-          <button className="switch-button">更换模型</button>
         </section>
 
         <section className="params-card clay-panel">
-          <h2>采样参数</h2>
-          <Slider label="温度 Temperature" value={temp} onChange={setTemp} />
-          <Slider label="Top P" value={topP} onChange={setTopP} />
-          <Slider label="最大长度" value={length} min="512" max="2048" step="64" onChange={setLength} />
-          <Slider label="重复惩罚" value={penalty} min="0.8" max="1.5" step="0.05" onChange={setPenalty} />
-          <button className="advanced-button">高级设置⌄</button>
-        </section>
-
-        <section className="resource-card clay-panel">
-          <header>
-            <h2>本地资源</h2>
-            <button>刷新</button>
-          </header>
-          {[
-            ["CPU", "32%", "mint"],
-            ["内存", "12.6 / 32 GB", "lavender"],
-            ["显存 VRAM", "4.1 / 8 GB", "yellow"],
-            ["存储空间", "286 / 512 GB", "blue"],
-          ].map(([label, value, tone], index) => (
-            <div className="meter-row" key={label}>
-              <span>{label}</span>
-              <i className={tone} style={{ "--meter": `${32 + index * 7}%` }} />
-              <strong>{value}</strong>
-            </div>
-          ))}
+          <h2>Codex 参数</h2>
+          <SelectField
+            label="Sandbox -s"
+            value={sandboxMode}
+            options={sandboxOptions}
+            onChange={setSandboxMode}
+          />
+          <SelectField
+            label="Approval -a"
+            value={approvalPolicy}
+            options={approvalOptions}
+            onChange={setApprovalPolicy}
+          />
+          <SegmentedControl
+            label="Reasoning effort"
+            value={reasoningEffort}
+            options={["low", "medium", "high"]}
+            onChange={setReasoningEffort}
+          />
+          <SegmentedControl
+            label="Verbosity"
+            value={verbosity}
+            options={["low", "medium", "high"]}
+            onChange={setVerbosity}
+          />
+          <button
+            className={`toggle-line ${webSearch ? "enabled" : ""}`}
+            onClick={() => setWebSearch((enabled) => !enabled)}
+          >
+            <span>Web Search --search</span>
+            <b>{webSearch ? "开启" : "关闭"}</b>
+          </button>
+          <code className="cli-preview">
+            codex exec -m {textModel.split(" / ").at(-1)} -s {sandboxMode} -a {approvalPolicy}
+          </code>
         </section>
 
         <section className="history-card clay-panel">
