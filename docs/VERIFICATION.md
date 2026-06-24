@@ -60,7 +60,7 @@ npx playwright@1.61.1 screenshot --viewport-size=1440,720 --full-page http://127
 
 ```bash
 git diff --check
-rg -n "docs/(SPEC|DESIGN|VERIFICATION|QA_LOG)\\.md" AGENTS.md README.md docs
+rg -n "<过期定位词>|<旧方向词>|<废弃文档入口>" AGENTS.md README.md docs
 ```
 
-确认规范入口全部指向 `docs/`，根目录只保留协作入口和项目说明。
+确认项目定位保持为小红书图文生成器，且没有过期文档入口或旧方向表述。

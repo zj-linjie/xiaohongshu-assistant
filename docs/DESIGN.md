@@ -22,7 +22,7 @@
 
 ## 布局规范
 
-页面必须支持上下滚动。不要在外层重新引入会裁切内容的 `overflow: hidden`。当前修复后的关键约束是：
+页面必须支持上下滚动。外层布局不能使用会裁切内容的 `overflow: hidden`。关键约束是：
 
 - `body` 允许 `overflow-x: auto` 和 `overflow-y: auto`。
 - `.app-shell` 使用 `min-height` 而不是固定 `height`。
