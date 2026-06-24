@@ -4,21 +4,27 @@
 
 本仓库是 `薄荷工坊 / Mint Atelier` 的 React + Vite 桌面端高保真原型。产品形态是 Pastel 3D Claymorphism 风格的 3 列小红书内容创作工作台。
 
-修改视觉设计、布局、资产或交互行为前，必须先阅读 `DESIGN.md`。`DESIGN.md` 是视觉系统、布局规则、资产风格和 QA 期望的事实来源。
+修改产品结构、视觉设计、布局、资产或交互行为前，必须先阅读：
+
+- `docs/SPEC.md`：产品结构、行为边界和右侧配置栏规则。
+- `docs/DESIGN.md`：视觉系统、布局规则和资产风格。
+- `docs/VERIFICATION.md`：构建、截图和交互验证方式。
 
 ## 实现地图
 
 - 应用入口：`src/App.jsx`
 - 全局样式和视觉 token：`src/styles.css`
 - 静态资产：`public/assets/`
-- 设计规范：`DESIGN.md`
-- 视觉 QA 记录：`design-qa.md`
+- 产品规格：`docs/SPEC.md`
+- 设计规范：`docs/DESIGN.md`
+- 验证规范：`docs/VERIFICATION.md`
+- QA 记录：`docs/QA_LOG.md`
 
 当前 UI 是静态/演示型原型，使用本地 React state 驱动可见交互，包括主导航、编辑标签、文案/图片模型选择、模型运行方式、Codex 参数、Web Search 开关和灵感输入。
 
 ## 开发命令
 
-验证原型时自行启动本地开发服务器：
+启动本地开发服务器：
 
 ```bash
 npm run dev -- --port 5173
@@ -30,16 +36,9 @@ npm run dev -- --port 5173
 npm run build
 ```
 
-视觉验证优先使用当前 in-app browser。需要截图时，在本地服务器运行后使用 Playwright：
+完整验证命令和检查清单见 `docs/VERIFICATION.md`。
 
-```bash
-npx playwright@1.61.1 screenshot --viewport-size=1440,900 http://127.0.0.1:5173/ output/playwright/xhs-g4-1440.png
-npx playwright@1.61.1 screenshot --viewport-size=1440,720 --full-page http://127.0.0.1:5173/ /tmp/xhs-g4-scroll-check.png
-```
-
-如果当前 in-app browser 已经打开其他端口，例如 `http://127.0.0.1:5174/`，可以直接使用该页面做刷新和交互验证，但文档中的默认命令仍以 `5173` 为准。
-
-## 设计边界
+## 持久边界
 
 保持产品形态：
 
@@ -56,7 +55,7 @@ npx playwright@1.61.1 screenshot --viewport-size=1440,720 --full-page http://127
 - 重新引入布局裁切、隐藏 overflow 或会切掉中间内容的固定高度容器。
 - 添加解释“如何使用界面”的可见说明文字，除非该文案本身属于产品界面。
 
-## 右侧配置栏规则
+## 右侧配置栏边界
 
 右侧配置栏当前包含：
 
@@ -65,7 +64,7 @@ npx playwright@1.61.1 screenshot --viewport-size=1440,720 --full-page http://127
 - `Codex 参数`：呈现与 Codex CLI 运行语义一致的参数，例如 `--sandbox`、`--ask-for-approval`、`--search` 和通过 `-c key=value` 覆盖的推理强度、输出详略等。
 - `运行历史`：保留近期任务状态，不再展示本地资源面板。
 
-不要恢复旧的 `采样参数`、`Temperature`、`Top P`、`重复惩罚` 或 `本地资源` 面板，除非产品方向明确改变并同步更新 `DESIGN.md`。
+不要恢复旧的 `采样参数`、`Temperature`、`Top P`、`重复惩罚` 或 `本地资源` 面板，除非产品方向明确改变并同步更新 `docs/SPEC.md` 和 `docs/DESIGN.md`。
 
 ## 布局和滚动规则
 
@@ -80,17 +79,35 @@ npx playwright@1.61.1 screenshot --viewport-size=1440,720 --full-page http://127
 
 ## 文档维护
 
-以下内容变化时更新 `DESIGN.md`：
+以下内容变化时更新 `docs/SPEC.md`：
+
+- 产品定位或工作台结构。
+- 组件职责或交互状态。
+- 右侧配置栏等关键产品边界。
+- 明确不做或禁止恢复的功能。
+
+以下内容变化时更新 `docs/DESIGN.md`：
 
 - 视觉方向或配色。
 - 布局结构或滚动行为。
-- 组件结构或交互期望。
+- 组件视觉语言。
 - 资产策略或图片风格。
+
+以下内容变化时更新 `docs/VERIFICATION.md`：
+
+- 开发、构建或截图命令。
 - 视觉 QA 命令或验收标准。
+- 需要长期复用的检查清单。
+
+以下内容变化时更新 `docs/QA_LOG.md`：
+
+- 已执行的视觉 QA 记录。
+- 当前通过/失败结论。
+- 截图路径、端口、环境或遗留问题。
 
 以下内容变化时更新 `AGENTS.md`：
 
 - 实现地图。
 - 开发或验证命令。
 - 持久协作规则。
-- 右侧配置栏等关键产品形态边界。
+- 文档入口或关键产品形态边界。

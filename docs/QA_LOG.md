@@ -1,4 +1,4 @@
-# design-qa.md
+# QA_LOG.md
 
 ## 当前状态
 
@@ -54,30 +54,9 @@ Codex 参数：
 - 切换 sandbox、reasoning effort 和 Web Search 后，状态正常更新。
 - 页面在较矮视口中仍可纵向滚动，右侧运行历史可继续访问。
 
-## 常用验证命令
-
-构建检查：
-
-```bash
-npm run build
-```
-
-默认本地预览：
-
-```bash
-npm run dev -- --port 5173
-```
-
-Playwright 截图：
-
-```bash
-npx playwright@1.61.1 screenshot --viewport-size=1440,900 http://127.0.0.1:5173/ output/playwright/xhs-g4-1440.png
-npx playwright@1.61.1 screenshot --viewport-size=1440,720 --full-page http://127.0.0.1:5173/ /tmp/xhs-g4-scroll-check.png
-```
-
 ## 后续注意
 
 - 视觉或布局改动后，至少重新执行 `npm run build`。
 - 涉及右栏改动时，必须同时检查模型配置、Codex 参数和运行历史。
-- 如果恢复或新增资源监控类信息，需要先更新 `DESIGN.md`，再改实现。
+- 如果恢复或新增资源监控类信息，需要先更新 `docs/SPEC.md` 和 `docs/DESIGN.md`，再改实现。
 - 截图证据默认作为临时 QA 产物，不需要提交到仓库，除非用户明确要求。
