@@ -535,6 +535,11 @@ button {
   overflow: visible;
 }
 
+.preview {
+  display: flex;
+  flex-direction: column;
+}
+
 .editor header,
 .preview header,
 .recent header,
@@ -654,7 +659,11 @@ button {
 .post-card {
   margin: 12px auto 0;
   width: 272px;
-  height: 288px;
+  min-height: 334px;
+  height: auto;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
   padding: 12px;
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.86);
@@ -727,7 +736,8 @@ button {
 .post-card footer {
   display: flex;
   gap: 27px;
-  margin-top: 9px;
+  margin-top: auto;
+  padding-top: 9px;
   color: #3f3452;
   font-size: 12px;
   font-weight: 900;

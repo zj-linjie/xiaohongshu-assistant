@@ -11,10 +11,11 @@ const navItems = [
 const summerTopic = "夏日穿搭系列";
 const summerInspiration = "夏日穿搭系列：清爽、舒适、适合日常出行的穿搭灵感。";
 const summerTitle = "夏日穿搭系列｜清爽舒适的日常搭配灵感";
+const summerPostTitle = "夏日通勤穿搭｜清爽舒适的5个搭配技巧";
 const summerBody =
   "夏日穿搭系列，重点放在轻盈面料、清爽配色和实用单品组合。\n\n1. 选择透气材质\n棉麻、薄棉和轻薄针织更适合炎热天气，日常活动也更自在。\n\n2. 保持配色清爽\n浅蓝、米白、薄荷绿和柔和灰色容易搭配，也能让整体视觉更干净。\n\n3. 加入实用配饰\n遮阳帽、帆布包和舒适凉鞋可以提升完整度，同时保持轻松自然。";
 const summerPreviewText =
-  "从透气材质、清爽配色和实用配饰出发，整理一组适合日常出行的夏日穿搭灵感。";
+  "夏天来了，通勤穿搭也要清新又舒适！今天分享5个日常搭配技巧，轻松穿出清爽状态。";
 
 const projects = [
   { title: summerTopic, meta: "今天 10:24", active: true },
@@ -218,14 +219,25 @@ export function App() {
                 <img src="/assets/avatar-creator.png" alt="" />
                 <strong>薄荷小丸子</strong>
                 <button>关注</button>
+                <button className="share-button" aria-label="分享">↗</button>
               </div>
-              <img className="post-cover" src="/assets/spring-outfit.png" alt="夏日穿搭系列封面预览" />
-              <h3>{summerTitle}</h3>
+              <div className="post-cover-wrap">
+                <img className="post-cover" src="/assets/spring-outfit.png" alt="夏日穿搭系列封面预览" />
+                <span className="cover-count">1/6</span>
+              </div>
+              <div className="carousel-dots" aria-hidden="true">
+                <i className="active" /><i /><i /><i /><i />
+              </div>
+              <h3>{summerPostTitle}</h3>
               <p>{summerPreviewText}</p>
               <div className="hashtags">
-                <span>#夏日穿搭</span><span>#清爽搭配</span><span>#日常穿搭</span>
+                <span>#通勤穿搭</span><span>#清爽搭配</span><span>#日常穿搭</span><span>#夏日穿搭</span>
               </div>
-              <footer><span>1289</span><span>965</span><span>213</span></footer>
+              <footer>
+                <span><b className="post-icon like">♥</b>1289</span>
+                <span><b className="post-icon star">☆</b>965</span>
+                <span><b className="post-icon chat">◌</b>213</span>
+              </footer>
             </div>
           </article>
         </section>
