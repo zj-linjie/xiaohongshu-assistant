@@ -802,16 +802,21 @@ button {
 }
 
 .post-icon {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  font-size: 20px;
+  border-radius: 50%;
+  font-size: 18px;
   font-style: normal;
   font-weight: 700;
   line-height: 1;
+  box-shadow:
+    4px 5px 10px rgba(118, 91, 141, 0.12),
+    inset 0 2px 5px rgba(255, 255, 255, 0.86),
+    inset 0 -4px 8px rgba(123, 92, 150, 0.08);
 }
 
 .post-icon.like {
@@ -820,13 +825,18 @@ button {
 }
 
 .post-icon.star {
-  font-size: 20px;
-  filter: drop-shadow(0 2px 3px rgba(255, 188, 59, 0.2));
+  color: #8d75bc;
+  background: linear-gradient(145deg, #fff5d1, #f3e9ff 58%, #e8f7ff);
+  font-family: "Arial Rounded MT Bold", "Nunito", "PingFang SC", sans-serif;
+  font-size: 21px;
+  font-weight: 900;
+  filter: none;
 }
 
 .post-icon.chat {
-  font-size: 20px;
-  filter: drop-shadow(0 2px 3px rgba(113, 99, 149, 0.18));
+  background: linear-gradient(145deg, #ddf6ff, #f1e7ff);
+  font-size: 16px;
+  filter: grayscale(0.28) saturate(0.72);
 }
 
 .recent {
