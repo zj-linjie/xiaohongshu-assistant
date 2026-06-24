@@ -40,6 +40,7 @@
 - `.app-shell` 使用 `min-height` 而不是固定 `height`。
 - `.app-shell` 保持 `overflow: visible`。
 - 中间 `.creative-grid`、`.editor`、`.preview` 需要足够的最小高度，避免编辑区、预览区和最近任务被切割、剪裁或遮挡。
+- 中间最近任务区域使用内容驱动的最小高度，任务卡和状态控件不能被底部边界压住。
 
 修改布局时必须在 1440x900 和较矮视口中检查：
 
