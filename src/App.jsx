@@ -8,26 +8,34 @@ const navItems = [
   { id: "data", icon: "图", label: "数据看板" },
 ];
 
+const summerTopic = "夏日穿搭系列";
+const summerInspiration = "夏日穿搭系列：清爽、舒适、适合日常出行的穿搭灵感。";
+const summerTitle = "夏日穿搭系列｜清爽舒适的日常搭配灵感";
+const summerBody =
+  "夏日穿搭系列，重点放在轻盈面料、清爽配色和实用单品组合。\n\n1. 选择透气材质\n棉麻、薄棉和轻薄针织更适合炎热天气，日常活动也更自在。\n\n2. 保持配色清爽\n浅蓝、米白、薄荷绿和柔和灰色容易搭配，也能让整体视觉更干净。\n\n3. 加入实用配饰\n遮阳帽、帆布包和舒适凉鞋可以提升完整度，同时保持轻松自然。";
+const summerPreviewText =
+  "从透气材质、清爽配色和实用配饰出发，整理一组适合日常出行的夏日穿搭灵感。";
+
 const projects = [
-  { title: "春日穿搭灵感合集", meta: "今天 10:24", active: true },
+  { title: summerTopic, meta: "今天 10:24", active: true },
   { title: "治愈系家居好物", meta: "昨天 16:48" },
   { title: "露营装备红榜", meta: "5月11日 09:30" },
-  { title: "多巴胺穿搭指南", meta: "5月9日 14:12" },
+  { title: "轻便出行搭配", meta: "5月9日 14:12" },
 ];
 
 const logs = [
-  ["10:24", "生成完成：春日穿搭灵感合集", "mint"],
+  ["10:24", `生成完成：${summerTopic}`, "mint"],
   ["10:22", "开始生成内容...", "blue"],
   ["10:21", "导入参考素材：穿搭参考图.jpg", "pink"],
   ["10:20", "切换模型：Mint-Writer 2.0", "yellow"],
-  ["10:18", "新建项目：春日穿搭灵感合集", "mint"],
+  ["10:18", `新建项目：${summerTopic}`, "mint"],
 ];
 
 const taskCards = [
-  { title: "春日穿搭灵感合集", meta: "10:24", status: "已完成", image: "/assets/spring-outfit.png" },
+  { title: summerTopic, meta: "10:24", status: "已完成", image: "/assets/spring-outfit.png" },
   { title: "治愈系家居好物", meta: "昨天 16:48", status: "生成中", image: "/assets/avatar-creator.png", progress: 60 },
   { title: "露营装备红榜", meta: "5月11日 09:30", status: "草稿中", image: "/assets/notebook-pencil.png" },
-  { title: "多巴胺穿搭指南", meta: "5月9日 14:12", status: "已完成", image: "/assets/spring-outfit.png" },
+  { title: "轻便出行搭配", meta: "5月9日 14:12", status: "已完成", image: "/assets/spring-outfit.png" },
 ];
 
 function SoftIcon({ children, tone = "mint" }) {
@@ -61,9 +69,7 @@ export function App() {
   const [topP, setTopP] = useState("0.90");
   const [length, setLength] = useState("1024");
   const [penalty, setPenalty] = useState("1.10");
-  const [draft, setDraft] = useState(
-    "春天来了，通勤穿搭也要清新又显高级！今天分享 5 个小个子女生的穿搭技巧，轻松穿出长腿感。",
-  );
+  const [draft, setDraft] = useState(summerInspiration);
 
   const navLabel = useMemo(
     () => navItems.find((item) => item.id === selectedNav)?.label ?? "创作工作台",
@@ -186,11 +192,11 @@ export function App() {
             </header>
             <label className="field">
               <span>标题</span>
-              <input defaultValue="春日通勤穿搭｜小个子显高显瘦的 5 个搭配技巧" />
+              <input defaultValue={summerTitle} />
             </label>
             <label className="field body-field">
               <span>正文</span>
-              <textarea defaultValue={"春天来了，通勤穿搭也要清新又显高级！\n今天分享 5 个小个子女生的穿搭技巧，轻松穿出长腿感。\n\n1. 高腰线是关键\n选择高腰下装，搭配短款上衣，视觉上拉长腿部比例...\n\n2. 同色系更显高\n上下装同色系搭配，整体更延伸，温柔又高级..."} />
+              <textarea defaultValue={summerBody} />
             </label>
             <div className="editor-tools" aria-label="草稿工具">
               {["AI 改写", "润色", "扩写", "缩写", "清空"].map((tool, index) => (
@@ -213,11 +219,11 @@ export function App() {
                 <strong>薄荷小丸子</strong>
                 <button>关注</button>
               </div>
-              <img className="post-cover" src="/assets/spring-outfit.png" alt="春日通勤穿搭封面预览" />
-              <h3>春日通勤穿搭｜小个子显高显瘦的5个搭配技巧</h3>
-              <p>春天来了，通勤穿搭也要清新又显高级！今天分享 5 个小个子女生的穿搭技巧...</p>
+              <img className="post-cover" src="/assets/spring-outfit.png" alt="夏日穿搭系列封面预览" />
+              <h3>{summerTitle}</h3>
+              <p>{summerPreviewText}</p>
               <div className="hashtags">
-                <span>#通勤穿搭</span><span>#小个子穿搭</span><span>#显高显瘦</span>
+                <span>#夏日穿搭</span><span>#清爽搭配</span><span>#日常穿搭</span>
               </div>
               <footer><span>1289</span><span>965</span><span>213</span></footer>
             </div>
