@@ -235,8 +235,8 @@ export function App() {
               </div>
               <footer>
                 <span><b className="post-icon like">♥</b>1289</span>
-                <span><b className="post-icon star">☆</b>965</span>
-                <span><b className="post-icon chat">◌</b>213</span>
+                <span><b className="post-icon star">⭐️</b>965</span>
+                <span><b className="post-icon chat">💬</b>213</span>
               </footer>
             </div>
           </article>
