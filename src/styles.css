@@ -1,4 +1,5 @@
 :root {
+  --column-scroll-inset: 20px;
   font-family: "Nunito", "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   color: #30284f;
   background: #f8ecfb;
@@ -147,7 +148,7 @@ button {
 .sidebar::-webkit-scrollbar-track,
 .workspace::-webkit-scrollbar-track,
 .config-rail::-webkit-scrollbar-track {
-  margin-block: 20px;
+  margin-block: var(--column-scroll-inset);
 }
 
 .sidebar::-webkit-scrollbar-thumb,
@@ -161,11 +162,30 @@ button {
   background: linear-gradient(180deg, rgba(196, 150, 232, 0.42), rgba(120, 210, 194, 0.42));
 }
 
+.workspace-shell,
+.config-shell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.column-bottom-fade::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  bottom: 0;
+  left: 0;
+  z-index: 12;
+  height: var(--column-scroll-inset);
+  background: linear-gradient(to top, rgba(248, 236, 251, 0.94), rgba(248, 236, 251, 0));
+  pointer-events: none;
+}
+
 .sidebar {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px;
+  padding: var(--column-scroll-inset) 16px;
 }
 
 .brand,
@@ -448,6 +468,7 @@ button {
 .workspace {
   display: grid;
   gap: 12px;
+  height: 100%;
   min-width: 0;
   padding-right: 2px;
 }
@@ -1255,6 +1276,7 @@ button {
   display: grid;
   grid-template-rows: auto auto auto;
   gap: 12px;
+  height: 100%;
 }
 
 .config-rail .clay-panel {

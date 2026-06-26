@@ -546,7 +546,8 @@ export function App() {
         </button>
       </aside>
 
-      <section className="workspace" aria-label="阶段式创作工作台">
+      <section className="workspace-shell column-bottom-fade" aria-label="阶段式创作工作台">
+        <div className="workspace">
         <section className="overview clay-panel">
           <div className="overview-copy">
             <StageBadge tone="mint">新版流程</StageBadge>
@@ -820,29 +821,31 @@ export function App() {
             </div>
           </article>
         </section>
+        </div>
       </section>
 
-      <aside className="config-rail" aria-label="右侧配置栏">
-        <section className="model-card clay-panel">
-          <h2>模型配置</h2>
-          <p>文案生成与图片生成分开配置，字段会自动缓存。</p>
-          <div className="model-route-list">
-            <ModelConfig
-              title="文案生成"
-              icon="文"
-              tone="mint"
-              value={modelConfig.text}
-              onChange={(value) => updateModelConfig("text", value)}
-            />
-            <ModelConfig
-              title="图片生成"
-              icon="图"
-              tone="pink"
-              value={modelConfig.image}
-              onChange={(value) => updateModelConfig("image", value)}
-            />
-          </div>
-        </section>
+      <aside className="config-shell column-bottom-fade" aria-label="右侧配置栏">
+        <div className="config-rail">
+          <section className="model-card clay-panel">
+            <h2>模型配置</h2>
+            <p>文案生成与图片生成分开配置，字段会自动缓存。</p>
+            <div className="model-route-list">
+              <ModelConfig
+                title="文案生成"
+                icon="文"
+                tone="mint"
+                value={modelConfig.text}
+                onChange={(value) => updateModelConfig("text", value)}
+              />
+              <ModelConfig
+                title="图片生成"
+                icon="图"
+                tone="pink"
+                value={modelConfig.image}
+                onChange={(value) => updateModelConfig("image", value)}
+              />
+            </div>
+          </section>
 
         <section className={`notice-card clay-panel ${notice.type}`}>
           <header>
@@ -882,6 +885,7 @@ export function App() {
             ))}
           </div>
         </section>
+        </div>
       </aside>
     </main>
   );
