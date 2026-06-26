@@ -20,7 +20,7 @@ npm run build
 
 ## 文档入口
 
-- `SPEC.md`：详细产品规格和完整核心流程。
+- `docs/SPEC.md`：详细产品规格和完整核心流程。
 - `AGENTS.md`：项目契约、边界、实现地图和修改规则。
 - `docs/DESIGN.md`：视觉系统、布局规则和资产风格。
 - `docs/VERIFICATION.md`：构建、截图和交互验证清单。

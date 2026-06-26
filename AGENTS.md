@@ -2,7 +2,7 @@
 
 ## 项目契约
 
-`薄荷工坊 / Mint Atelier` 是一个 React + Vite 桌面端 Web App，用于辅助生成小红书内容。详细产品规格以 `SPEC.md` 为准。
+`薄荷工坊 / Mint Atelier` 是一个 React + Vite 桌面端 Web App，用于辅助生成小红书内容。详细产品规格以 `docs/SPEC.md` 为准。
 
 产品保持 3 列工作台形态：左侧流程/草稿导航，中间阶段式创作区，右侧模型配置、状态和错误提示。视觉保持 Pastel 3D Claymorphism，使用马卡龙色、大圆角黏土面板、柔和阴影和 3D soft icon；不要改成营销页、深色科技风、极简黑白风、纯聊天界面或通用 SaaS 后台。
 
@@ -25,7 +25,7 @@
 
 ## 实现地图
 
-- 产品规格：`SPEC.md`
+- 产品规格：`docs/SPEC.md`
 - 应用入口：`src/App.jsx`
 - 全局样式和视觉 token：`src/styles.css`
 - 资源文件：`public/assets/`
@@ -39,7 +39,7 @@ npm run build
 
 ## 修改规则
 
-- 产品或交互变化：同步更新 `SPEC.md` 和本文件。
+- 产品或交互变化：同步更新 `docs/SPEC.md` 和本文件。
 - 视觉或布局变化：保留当前 3 列工作台和 Pastel 3D Claymorphism 方向。
 - 涉及 `xiaohongshu-cli`、搜索、RAG 入库或生成链路时，必须保留用户主动触发和确认边界。
 - 完成改动后至少运行 `npm run build`；视觉布局改动还需要截图或浏览器检查。

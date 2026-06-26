@@ -68,7 +68,7 @@ npx playwright@1.61.1 screenshot --viewport-size=1440,720 --full-page http://127
 
 ```bash
 git diff --check
-rg -n "一键生成[内]容|编辑[标]签|Codex[ ]参数|Web[ ]Search" AGENTS.md README.md SPEC.md docs
+rg -n "一键生成[内]容|编辑[标]签|Codex[ ]参数|Web[ ]Search" AGENTS.md README.md docs
 ```
 
 确认项目定位保持为小红书内容创作辅助工具，且没有过期的一步式生成器或旧右栏参数表述。
