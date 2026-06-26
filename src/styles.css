@@ -633,6 +633,13 @@ button {
   white-space: nowrap;
 }
 
+.primary-button:disabled,
+.soft-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+  filter: saturate(0.78);
+}
+
 .soft-button {
   min-width: 100px;
   height: 36px;
@@ -1401,6 +1408,65 @@ button {
 .notice-card.success > p {
   color: #267c71;
   background: #e1fbf3;
+}
+
+.cli-status {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: inset 0 2px 7px rgba(255, 255, 255, 0.86);
+}
+
+.cli-status.running {
+  background: #fff8dc;
+}
+
+.cli-status.success {
+  background: #e1fbf3;
+}
+
+.cli-status.error {
+  background: #ffe8ef;
+}
+
+.cli-status span,
+.cli-status small,
+.cli-status code {
+  display: block;
+}
+
+.cli-status span {
+  color: #3f3452;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.cli-status p {
+  margin: 7px 0 0;
+  color: #5f536f;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.cli-status code {
+  max-width: 100%;
+  margin-top: 8px;
+  overflow: hidden;
+  color: #62527f;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cli-status small {
+  margin-top: 6px;
+  color: #887b9a;
+  font-size: 10px;
+  font-weight: 900;
 }
 
 .manual-boundary {

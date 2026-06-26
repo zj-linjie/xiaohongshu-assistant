@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { requestCodexGeneration } from "./codexClient.js";
 
 const STORAGE_PREFIX = "mint-atelier-v2";
 
@@ -31,6 +32,12 @@ const flowSteps = [
   { id: "drafts", label: "生成文案", meta: "5 篇草稿" },
   { id: "cover", label: "封面生成", meta: "Prompt 到图" },
 ];
+
+const generationLabels = {
+  topics: "选题",
+  drafts: "文案",
+  coverPrompts: "封面 Prompt",
+};
 
 const sidebarProjects = [
   { title: "夏日通勤穿搭", meta: "新版流程草稿", active: true },
@@ -74,60 +81,6 @@ const seedSearchResults = [
   },
 ];
 
-const topicSeeds = [
-  ["35 度通勤也清爽：4 个不闷热穿搭公式", "从面料、版型、配色拆解夏季上班穿搭", "上班族、小个子女生"],
-  ["不想穿得像工服，夏日职场怎么松弛一点", "把正式单品换成柔软材质和低饱和颜色", "轻熟风职场新人"],
-  ["夏天显精神的薄荷绿穿搭，适合普通人复制", "用薄荷绿做主色，搭配奶油白和浅蓝", "喜欢清爽色系的女生"],
-  ["衣柜里 5 件单品，拼出一周通勤不重样", "用基础单品做组合，强调可复用", "预算有限的通勤人群"],
-  ["小个子夏日上班穿搭，显高不靠高跟鞋", "用比例、鞋包同色和短上衣优化身形", "155-165cm 小个子"],
-  ["怕热又怕空调冷，夏季办公室穿什么", "围绕薄外搭和透气单品解决温差", "长期坐办公室人群"],
-  ["拍小红书封面更干净的通勤配色表", "把穿搭和封面静物颜色统一", "内容创作者"],
-  ["普通白衬衫怎么穿出夏日清爽感", "从材质、扣法、下装和配饰切入", "基础款爱好者"],
-  ["不费力的周一穿搭，3 分钟出门也完整", "强调快速搭配和低出错率", "早高峰通勤人群"],
-  ["夏季通勤包鞋怎么选，整套看起来更贵", "用小配饰提升完整度", "轻熟风穿搭用户"],
-];
-
-const draftSeeds = [
-  {
-    title: "35 度通勤也清爽｜我会反复穿的 4 个公式",
-    coverDirection: "薄荷绿针织开衫、奶油白半裙、浅色包鞋平铺，带少量花材和柔和晨光。",
-    body:
-      "夏天上班最怕两件事：路上闷热，进办公室又被空调吹冷。\n\n我最近更常用这 4 个公式，不是追求夸张吸睛，而是让普通通勤也看起来清爽、利落、舒服。\n\n1. 上衣选薄而有型\n薄针织、棉麻衬衫、轻薄短袖都可以，重点是肩线和领口不要塌。\n\n2. 下装保持垂感\n奶油白半裙、浅灰阔腿裤会比紧身裤更透气，也更容易显得干净。\n\n3. 配色控制在 2 到 3 个\n薄荷绿、米白、浅蓝放在一起，视觉上就会自动降温。\n\n4. 鞋包做同色呼应\n小面积同色会让整套更完整，不需要很贵也能显精致。\n\n#夏日通勤[话题]# #通勤穿搭[话题]# #清爽穿搭[话题]#",
-  },
-  {
-    title: "夏天上班别穿太满，清爽感来自这几个细节",
-    coverDirection: "白色桌面、浅蓝衬衫、奶油色通勤包、银色小饰品和便签排版。",
-    body:
-      "夏季通勤不是穿得越少越清爽，很多时候是细节太满才显得闷。\n\n我会先把颜色压干净，再让材质轻一点，最后用一个小配饰收尾。\n\n比如薄荷绿上衣配奶油白下装，鞋包都选浅色，整个人会更明亮。衬衫如果是软一点的面料，也会比硬挺款更适合日常。\n\n这套思路适合每天上班、需要得体但不想太正式的人。\n\n#上班穿搭[话题]# #夏日搭配[话题]# #轻熟风穿搭[话题]#",
-  },
-  {
-    title: "普通人也能复制的夏日通勤配色",
-    coverDirection: "三组色卡、浅色衣物局部、通勤包和植物枝叶，整体干净明亮。",
-    body:
-      "如果不知道夏天上班穿什么，先从配色开始会简单很多。\n\n我最推荐这三组：薄荷绿加奶油白，浅蓝加灰白，淡粉加米色。它们都不会太抢眼，但拍照和日常都很显清爽。\n\n再把鞋包控制在同一个浅色系，整套就不会散。对普通衣柜来说，这比买很多新衣服更实用。\n\n#配色公式[话题]# #夏季穿搭[话题]# #通勤灵感[话题]#",
-  },
-  {
-    title: "怕热又怕冷气房，我的夏季办公室穿搭思路",
-    coverDirection: "轻薄开衫、折叠白衬衫、帆布包、冰饮杯和桌面文具静物。",
-    body:
-      "夏天通勤最难的是温差：路上热，办公室冷。\n\n所以我会把外搭当成必备项，但选择轻薄、不占包的款式。里面穿透气短袖或背心，外面加一件薄开衫，既能防空调，也不会显得厚重。\n\n下装建议选垂感半裙或阔腿裤，走路更舒服。颜色尽量浅一些，整套会更清爽。\n\n#办公室穿搭[话题]# #空调房穿搭[话题]# #夏日通勤[话题]#",
-  },
-  {
-    title: "3 分钟出门的通勤穿搭，关键是提前定公式",
-    coverDirection: "衣架上的浅色套装、鞋包同色组合、手账本和清单卡片。",
-    body:
-      "早上赶时间的时候，我不会临时想搭配，而是直接套用公式。\n\n短上衣加高腰下装，浅色上衣加同色鞋包，薄外搭加垂感裤，这几组几乎不会出错。\n\n提前把常穿单品放在一个色系里，早上只要选一件重点色，其他都用基础色承接，出门会快很多。\n\n#快速出门穿搭[话题]# #通勤公式[话题]# #小红书穿搭[话题]#",
-  },
-];
-
-const coverPrompts = [
-  "小红书封面静物摄影，薄荷绿色轻薄针织开衫与奶油白半裙平铺在暖白织物背景上，旁边有白色通勤包、米色乐福鞋、少量雏菊花材和金色项链，柔和自然晨光，干净真实，高级生活方式摄影，不出现真人、脸、手、动物",
-  "竖版小红书封面，浅蓝衬衫、奶油白托特包、银色小饰品、便签和透明冰饮杯摆放在白色桌面，局部植物枝叶点缀，马卡龙清爽配色，真实产品摄影质感，不出现真人、脸、手、动物",
-  "通勤穿搭封面静物，三张浅色配色卡、薄荷绿布料、米白鞋包、干净手账本和铅笔排版，柔和阴影，清爽夏季氛围，不出现真人、脸、手、动物",
-  "奶油白背景上的一周通勤单品平铺，薄针织、半裙、浅色包、乐福鞋、香槟金首饰和小束花材，画面留出标题排版空间，真实摄影，不出现真人、脸、手、动物",
-  "小红书生活方式封面，浅色衣架、折叠白衬衫、薄荷绿开衫、帆布包和办公室桌面文具，暖色阳光和柔和阴影，清爽但不夸张，不出现真人、脸、手、动物",
-];
-
 const errorMessages = {
   search: "搜索失败：请确认关键词不为空，并检查 xiaohongshu-cli 或网络状态后重试。",
   rag: "RAG 加入失败：请先勾选至少一条搜索结果，再点击加入本地知识库。",
@@ -136,6 +89,7 @@ const errorMessages = {
   prompts: "封面 Prompt 生成失败：请先选择一篇文案。",
   image: "封面图生成失败：已保留原始 Prompt，可以检查图片模型配置后重新生成。",
   config: "模型配置缺失：云端 API 需要填写 API Key、API Base URL 和模型名称。",
+  cloud: "云端 API 暂未接入：本轮请切换到本地 CLI 生成。",
   key: "API Key 无效：请检查密钥是否完整，或切换到本地 CLI 运行方式。",
   cli: "本地 CLI 不可用：请确认 Codex CLI 或图片 CLI 已安装并可在终端运行。",
   network: "网络请求失败：请检查代理、API Base URL 或稍后重试。",
@@ -270,6 +224,15 @@ export function App() {
   const [selectedPromptId, setSelectedPromptId] = useState(null);
   const [coverImage, setCoverImage] = useState(null);
   const [lastSavedAt, setLastSavedAt] = useState("");
+  const [generatingKind, setGeneratingKind] = useState("");
+  const [cliStatus, setCliStatus] = useState({
+    state: "idle",
+    text: "尚未调用 Codex CLI。",
+    commandPreview: "",
+    durationMs: null,
+    generatedAt: "",
+    code: "",
+  });
   const [notice, setNotice] = useState({
     type: "ready",
     text: "已加载新版阶段式工作台，搜索和生成链路均为手动触发。",
@@ -323,6 +286,10 @@ export function App() {
     setNotice({ type: "success", text });
   };
 
+  const setCustomError = (text) => {
+    setNotice({ type: "error", text });
+  };
+
   const updateModelConfig = (channel, value) => {
     setModelConfig((current) => ({ ...current, [channel]: value }));
   };
@@ -333,8 +300,8 @@ export function App() {
       setError("config");
       return false;
     }
-    if (config.provider === "cloud" && (!config.apiKey.trim() || !config.baseUrl.trim())) {
-      setError("config");
+    if (config.provider === "cloud") {
+      setError("cloud");
       return false;
     }
     return true;
@@ -346,11 +313,60 @@ export function App() {
       setError("config");
       return false;
     }
-    if (config.provider === "cloud" && (!config.apiKey.trim() || !config.baseUrl.trim())) {
-      setError("config");
+    if (config.provider === "cloud") {
+      setError("cloud");
       return false;
     }
     return true;
+  };
+
+  const runCodexGeneration = async (kind, payload) => {
+    const label = generationLabels[kind];
+    setGeneratingKind(kind);
+    setCliStatus({
+      state: "running",
+      text: `正在通过本地 Codex CLI 生成${label}...`,
+      commandPreview: "codex exec ...",
+      durationMs: null,
+      generatedAt: "",
+      code: "",
+    });
+
+    try {
+      const result = await requestCodexGeneration({
+        kind,
+        persona,
+        keyword,
+        ragItems,
+        writingBrief,
+        modelName: modelConfig.text.modelName,
+        ...payload,
+      });
+
+      setCliStatus({
+        state: "success",
+        text: `Codex CLI 已生成 ${result.items.length} 条${label}。`,
+        commandPreview: result.commandPreview,
+        durationMs: result.durationMs,
+        generatedAt: result.generatedAt,
+        code: "",
+      });
+      return result.items;
+    } catch (error) {
+      const message = error?.message || "Codex CLI 生成失败。";
+      setCliStatus({
+        state: "error",
+        text: message,
+        commandPreview: "",
+        durationMs: null,
+        generatedAt: "",
+        code: error?.code || "CODEX_FAILED",
+      });
+      setCustomError(message);
+      return null;
+    } finally {
+      setGeneratingKind("");
+    }
   };
 
   const runSearch = () => {
@@ -393,64 +409,64 @@ export function App() {
     setSuccess(`已加入 ${selectedItems.length} 条参考内容到本地 RAG。`);
   };
 
-  const generateTopics = () => {
+  const generateTopics = async () => {
     if (!persona.trim() || !keyword.trim() || ragItems.length === 0) {
       setError("topics");
       return;
     }
     if (!requireTextModel()) return;
 
-    const nextTopics = topicSeeds.map(([title, angle, audience], index) => ({
-      id: `topic-${index + 1}`,
-      title,
-      angle,
-      audience,
-      reason: `贴合「${keyword.trim()}」搜索热度，并能延续账号人设的真实分享感。`,
-      hook: ["清爽降温", "普通人可复制", "上班场景", "低成本优化"][index % 4],
-    }));
+    const nextTopics = await runCodexGeneration("topics", {});
+    if (!nextTopics) return;
 
     setTopics(nextTopics);
     setSelectedTopicId(nextTopics[0].id);
+    setDrafts([]);
+    setSelectedDraftId(null);
+    setPrompts([]);
+    setSelectedPromptId(null);
+    setCoverImage(null);
     setActiveStep("topics");
-    setSuccess("已基于人设、关键词和 RAG 参考生成 10 个选题。");
+    setSuccess("已通过本地 Codex CLI 生成 10 个选题。");
   };
 
-  const generateDrafts = () => {
+  const generateDrafts = async () => {
     if (!selectedTopic) {
       setError("drafts");
       return;
     }
     if (!requireTextModel()) return;
 
-    const nextDrafts = draftSeeds.map((draft, index) => ({
-      ...draft,
-      id: `draft-${index + 1}`,
-      topicTitle: selectedTopic.title,
-    }));
+    const nextDrafts = await runCodexGeneration("drafts", { selectedTopic });
+    if (!nextDrafts) return;
 
     setDrafts(nextDrafts);
     setSelectedDraftId(nextDrafts[0].id);
+    setPrompts([]);
+    setSelectedPromptId(null);
+    setCoverImage(null);
     setActiveStep("drafts");
-    setSuccess("已生成 5 篇文案，可选择一篇继续生成封面 Prompt。");
+    setSuccess("已通过本地 Codex CLI 生成 5 篇文案，可选择一篇继续生成封面 Prompt。");
   };
 
-  const generatePrompts = () => {
+  const generatePrompts = async () => {
     if (!selectedDraft) {
       setError("prompts");
       return;
     }
     if (!requireTextModel()) return;
 
-    const nextPrompts = coverPrompts.map((prompt, index) => ({
-      id: `prompt-${index + 1}`,
-      title: `封面 Prompt ${index + 1}`,
-      prompt,
-    }));
+    const nextPrompts = await runCodexGeneration("coverPrompts", {
+      selectedTopic,
+      selectedDraft,
+    });
+    if (!nextPrompts) return;
 
     setPrompts(nextPrompts);
     setSelectedPromptId(nextPrompts[0].id);
+    setCoverImage(null);
     setActiveStep("cover");
-    setSuccess("已生成 5 份封面 Prompt，默认不包含真人、脸、手和动物。");
+    setSuccess("已通过本地 Codex CLI 生成 5 份封面 Prompt，默认不包含真人、脸、手和动物。");
   };
 
   const generateCoverImage = (promptId = selectedPromptId) => {
@@ -681,7 +697,16 @@ export function App() {
             tone="blue"
             title="生成 10 个选题"
             meta="参考人设、关键词与本地 RAG"
-            action={<button className="primary-button" type="button" onClick={generateTopics}>生成选题</button>}
+            action={
+              <button
+                className="primary-button"
+                disabled={Boolean(generatingKind)}
+                type="button"
+                onClick={generateTopics}
+              >
+                {generatingKind === "topics" ? "生成中..." : "生成选题"}
+              </button>
+            }
           />
           <div className="topic-grid">
             {topics.length === 0 ? (
@@ -715,7 +740,16 @@ export function App() {
               tone="lavender"
               title="撰写思路与 5 篇文案"
               meta={selectedTopic ? selectedTopic.title : "先选择一个选题"}
-              action={<button className="primary-button" type="button" onClick={generateDrafts}>生成文案</button>}
+              action={
+                <button
+                  className="primary-button"
+                  disabled={Boolean(generatingKind)}
+                  type="button"
+                  onClick={generateDrafts}
+                >
+                  {generatingKind === "drafts" ? "生成中..." : "生成文案"}
+                </button>
+              }
             />
             <label className="field brief-field">
               <span>补充撰写思路</span>
@@ -778,7 +812,16 @@ export function App() {
               tone="rose"
               title="封面 Prompt 与封面图"
               meta="Prompt 默认禁真人、脸、手和动物，允许植物花材"
-              action={<button className="primary-button" type="button" onClick={generatePrompts}>生成 Prompt</button>}
+              action={
+                <button
+                  className="primary-button"
+                  disabled={Boolean(generatingKind)}
+                  type="button"
+                  onClick={generatePrompts}
+                >
+                  {generatingKind === "coverPrompts" ? "生成中..." : "生成 Prompt"}
+                </button>
+              }
             />
             <div className="prompt-list">
               {prompts.length === 0 ? (
@@ -861,6 +904,15 @@ export function App() {
             <span>生成</span>
             <span>封面</span>
             <strong>均需点击确认</strong>
+          </div>
+          <div className={`cli-status ${cliStatus.state}`}>
+            <span>Codex CLI</span>
+            <p>{cliStatus.text}</p>
+            {cliStatus.commandPreview ? <code>{cliStatus.commandPreview}</code> : null}
+            {cliStatus.durationMs ? (
+              <small>{Math.round(cliStatus.durationMs / 1000)}s · {new Date(cliStatus.generatedAt).toLocaleString("zh-CN")}</small>
+            ) : null}
+            {cliStatus.code ? <small>{cliStatus.code}</small> : null}
           </div>
         </section>
 

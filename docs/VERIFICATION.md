@@ -16,6 +16,20 @@ npm run dev -- --port 5173
 
 如果默认端口被占用，可以使用相邻端口做浏览器检查，但文档中的默认命令仍以 `5173` 为准。
 
+本地 Codex CLI 路径默认是 `/opt/homebrew/bin/codex`。需要覆盖时：
+
+```bash
+CODEX_CLI_PATH=/path/to/codex npm run dev -- --port 5173
+```
+
+本地 API smoke test：
+
+```bash
+curl -sS http://127.0.0.1:5173/api/codex/generate \
+  -H 'Content-Type: application/json' \
+  --data '{"kind":"topics","persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","ragItems":[{"id":"note-1","title":"通勤清爽穿搭","excerpt":"薄针织、棉麻半裙和低饱和配色。","tags":["通勤穿搭"],"metrics":"赞 1000","source":"manual"}],"modelName":"Codex CLI"}'
+```
+
 ## Playwright 截图
 
 在本地服务器运行后执行：
@@ -54,12 +68,13 @@ npx playwright@1.61.1 screenshot --viewport-size=1440,720 --full-page http://127
 - 人设、关键词和撰写思路可以编辑，并写入 `localStorage`。
 - 点击搜索热门内容后展示搜索结果，且不会自动加入 RAG。
 - 勾选搜索结果后点击加入 RAG，RAG 区域显示所选内容。
-- 点击生成选题后出现 10 个选题，选中态可切换。
-- 点击生成文案后出现 5 篇文案，选中态可切换，小红书预览同步更新。
-- 点击生成 Prompt 后出现 5 份封面 Prompt。
+- 点击生成选题后通过本地 Codex CLI 返回 10 个选题，选中态可切换。
+- 点击生成文案后通过本地 Codex CLI 返回 5 篇文案，选中态可切换，小红书预览同步更新。
+- 点击生成 Prompt 后通过本地 Codex CLI 返回 5 份封面 Prompt。
 - 点击某个 Prompt 后展示封面图 mock 结果，并保留原始 Prompt。
 - 文案模型和图片模型可分别切换本地 CLI / 云端 API，并编辑模型名称、API Key 和 API Base URL。
-- 云端 API 缺少配置时，生成动作显示模型配置缺失提示。
+- 云端 API 暂未接入时，生成动作显示“云端 API 暂未接入”提示。
+- 右侧状态卡显示最近一次 Codex CLI 调用状态、命令摘要、耗时或错误码。
 - 右侧错误覆盖按钮可以显示搜索失败、RAG 失败、选题失败、文案失败、Prompt 失败、封面失败、配置缺失、Key 无效、CLI 不可用和网络失败提示。
 
 ## 文档检查
