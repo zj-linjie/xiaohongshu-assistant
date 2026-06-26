@@ -76,10 +76,10 @@ function normalizeDraft(item, index, topicTitle) {
 function normalizePrompt(item, index) {
   const prompt = assertString(item.prompt, "prompt");
   const hasBoundary =
-    /(真人|人物|人像|人类)/.test(prompt) &&
-    /(脸|面部|面孔)/.test(prompt) &&
-    /(手|手部|手指)/.test(prompt) &&
-    /(动物|宠物)/.test(prompt);
+    /(真人|人物|人像|人类|模特|people|person|human|portrait)/i.test(prompt) &&
+    /(脸|面部|面孔|五官|face|facial)/i.test(prompt) &&
+    /(手|手部|手指|hand|finger)/i.test(prompt) &&
+    /(动物|宠物|animal|pet)/i.test(prompt);
 
   if (!hasBoundary) {
     throw new CodexApiError("CODEX_BAD_JSON", "Codex 返回的封面 Prompt 未明确排除真人、脸、手和动物。", 502);

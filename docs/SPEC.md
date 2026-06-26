@@ -6,7 +6,7 @@
 
 产品核心目标是让用户通过简单流程完成从「关键词」到「可发布内容草稿」的创作过程。本产品只做内容创作辅助，不做自动发布、自动点赞、自动评论、自动收藏、自动关注等平台操作。
 
-当前版本的选题、文案和封面 Prompt 通过本地 Codex CLI 真实生成；热门内容搜索、RAG 来源数据和封面图生成仍是本地 mock 流程。
+当前版本的选题、文案、封面 Prompt 和 imagegen PNG 封面图通过本地 Codex CLI 真实生成；热门内容搜索和 RAG 来源数据仍是本地 mock 流程。
 
 ## 2. 核心流程
 
@@ -85,11 +85,11 @@
 
 ### 3.9 生成封面图
 
-用户点击某个封面 Prompt 后，系统生成对应封面图。生成结果需要展示在页面中。生成失败时，需要保留原始封面 Prompt，方便用户重新生成。
+用户点击某个封面 Prompt 后，系统通过本地 Codex CLI worker 调用 native `image_gen.imagegen` 生成对应 PNG 封面图。生成结果需要展示在页面中，图片文件由本地 Vite middleware 临时托管在 `/generated/covers/*.png`。生成失败时，需要保留原始封面 Prompt，方便用户重新生成。
 
 ### 3.10 模型配置
 
-文案生成模型和图片生成模型需要支持单独配置。当前文案生成的本地 CLI 路线通过本机 `codex exec` 执行，默认 CLI 路径是 `/opt/homebrew/bin/codex`，可以用 `CODEX_CLI_PATH` 覆盖。云端 API 配置先保留入口，本轮暂不发起云端请求。
+文案生成模型和图片生成模型需要支持单独配置。当前文案、封面 Prompt 和 imagegen PNG 封面图生成的本地 CLI 路线通过本机 `codex exec` 执行，默认 CLI 路径是 `/opt/homebrew/bin/codex`，可以用 `CODEX_CLI_PATH` 覆盖。图片生成字段只作为前端配置展示，底层图片模型由 Codex worker 的 native imagegen 能力决定。云端 API 配置先保留入口，本轮暂不发起云端请求。
 
 用户至少可以分别配置：
 
@@ -114,5 +114,5 @@
 - 模型配置缺失
 - API Key 无效
 - 本地 CLI 不可用
-- Codex CLI 执行失败、超时或返回非 JSON 内容
+- Codex CLI 执行失败、超时、返回非 JSON 内容、imagegen 失败或写出非 PNG 内容
 - 网络请求失败

@@ -27,3 +27,33 @@ export async function requestCodexGeneration(payload) {
 
   return data;
 }
+
+export async function requestCodexCoverImage(payload) {
+  const response = await fetch("/api/codex/cover-image", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await response.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw Object.assign(new Error("本地封面图服务返回了非 JSON 内容。"), {
+      code: "CODEX_BAD_JSON",
+      details: text.slice(0, 400),
+    });
+  }
+
+  if (!response.ok || !data.ok) {
+    throw Object.assign(new Error(data.error || "Codex CLI 封面图生成失败。"), {
+      code: data.code || "CODEX_FAILED",
+      details: data.details,
+    });
+  }
+
+  return data;
+}

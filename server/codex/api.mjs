@@ -1,3 +1,8 @@
+import {
+  runCoverImagegen,
+  serveGeneratedCover,
+  validateCoverImageRequest,
+} from "./coverImage.mjs";
 import { buildCodexPrompt } from "./prompts.mjs";
 import { runCodex } from "./runCodex.mjs";
 import {
@@ -57,9 +62,16 @@ function serializeError(error) {
 export function codexGenerateMiddleware() {
   return async (req, res, next) => {
     const requestUrl = new URL(req.url ?? "/", "http://localhost");
-    if (requestUrl.pathname !== "/api/codex/generate") {
-      next();
+    const handledGeneratedCover = await serveGeneratedCover(requestUrl, res, next);
+    if (handledGeneratedCover) {
       return;
+    }
+
+    if (requestUrl.pathname !== "/api/codex/generate") {
+      if (requestUrl.pathname !== "/api/codex/cover-image") {
+        next();
+        return;
+      }
     }
 
     if (req.method !== "POST") {
@@ -73,6 +85,23 @@ export function codexGenerateMiddleware() {
 
     try {
       const payload = await readJsonBody(req);
+
+      if (requestUrl.pathname === "/api/codex/cover-image") {
+        validateCoverImageRequest(payload);
+        const codexResult = await runCoverImagegen(payload);
+
+        sendJson(res, 200, {
+          ok: true,
+          kind: "coverImage",
+          image: codexResult.image,
+          raw: codexResult.raw,
+          commandPreview: codexResult.commandPreview,
+          durationMs: codexResult.durationMs,
+          generatedAt: new Date().toISOString(),
+        });
+        return;
+      }
+
       validateRequest(payload);
 
       const prompt = buildCodexPrompt(payload);

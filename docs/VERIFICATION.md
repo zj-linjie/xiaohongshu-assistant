@@ -30,6 +30,16 @@ curl -sS http://127.0.0.1:5173/api/codex/generate \
   --data '{"kind":"topics","persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","ragItems":[{"id":"note-1","title":"通勤清爽穿搭","excerpt":"薄针织、棉麻半裙和低饱和配色。","tags":["通勤穿搭"],"metrics":"赞 1000","source":"manual"}],"modelName":"Codex CLI"}'
 ```
 
+封面图 API smoke test：
+
+```bash
+curl -sS http://127.0.0.1:5173/api/codex/cover-image \
+  -H 'Content-Type: application/json' \
+  --data '{"persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","selectedDraft":{"title":"35 度通勤也清爽","body":"薄针织和棉麻半裙组合，适合通勤收藏。#夏日通勤[话题]#"},"selectedPrompt":{"title":"薄荷通勤静物","prompt":"4:5 小红书封面，薄荷绿通勤穿搭静物，棉麻半裙、浅色包、色卡和花材，柔和自然光，明确排除真人、脸、手和动物。"},"modelName":"Codex CLI"}'
+```
+
+封面图 smoke test 需要确认响应里的 `image.src` 是 `/generated/covers/*.png`，并继续请求该 URL 验证 HTTP 200、`Content-Type: image/png`、PNG signature 正确且文件大小非 0。
+
 ## Playwright 截图
 
 在本地服务器运行后执行：
@@ -71,7 +81,7 @@ npx playwright@1.61.1 screenshot --viewport-size=1440,720 --full-page http://127
 - 点击生成选题后通过本地 Codex CLI 返回 10 个选题，选中态可切换。
 - 点击生成文案后通过本地 Codex CLI 返回 5 篇文案，选中态可切换，小红书预览同步更新。
 - 点击生成 Prompt 后通过本地 Codex CLI 返回 5 份封面 Prompt。
-- 点击某个 Prompt 后展示封面图 mock 结果，并保留原始 Prompt。
+- 点击某个 Prompt 后通过本地 Codex CLI imagegen worker 生成并展示 PNG 封面图，并保留原始 Prompt。
 - 文案模型和图片模型可分别切换本地 CLI / 云端 API，并编辑模型名称、API Key 和 API Base URL。
 - 云端 API 暂未接入时，生成动作显示“云端 API 暂未接入”提示。
 - 右侧状态卡显示最近一次 Codex CLI 调用状态、命令摘要、耗时或错误码。

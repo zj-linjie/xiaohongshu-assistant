@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { requestCodexGeneration } from "./codexClient.js";
+import { requestCodexCoverImage, requestCodexGeneration } from "./codexClient.js";
 
 const STORAGE_PREFIX = "mint-atelier-v2";
 
@@ -18,7 +18,7 @@ const defaultModelConfig = {
   },
   image: {
     provider: "local",
-    modelName: "Codex image CLI",
+    modelName: "Codex CLI / imagegen skill",
     apiKey: "",
     baseUrl: "",
   },
@@ -91,7 +91,7 @@ const errorMessages = {
   config: "模型配置缺失：云端 API 需要填写 API Key、API Base URL 和模型名称。",
   cloud: "云端 API 暂未接入：本轮请切换到本地 CLI 生成。",
   key: "API Key 无效：请检查密钥是否完整，或切换到本地 CLI 运行方式。",
-  cli: "本地 CLI 不可用：请确认 Codex CLI 或图片 CLI 已安装并可在终端运行。",
+  cli: "本地 CLI 不可用：请确认 Codex CLI 已安装并可在终端运行。",
   network: "网络请求失败：请检查代理、API Base URL 或稍后重试。",
 };
 
@@ -171,6 +171,8 @@ function ProviderSwitch({ value, onChange }) {
 
 function ModelConfig({ title, tone, icon, value, onChange }) {
   const update = (field, nextValue) => onChange({ ...value, [field]: nextValue });
+  const localDescription =
+    title === "图片生成" ? "本地 imagegen skill，模型由 Codex worker 决定" : "本地 CLI 路线";
 
   return (
     <article className="model-config-block">
@@ -178,7 +180,7 @@ function ModelConfig({ title, tone, icon, value, onChange }) {
         <SoftIcon tone={tone}>{icon}</SoftIcon>
         <div>
           <h3>{title}</h3>
-          <p>{value.provider === "local" ? "本地 CLI 路线" : "云端 API 路线"}</p>
+          <p>{value.provider === "local" ? localDescription : "云端 API 路线"}</p>
         </div>
       </header>
       <ProviderSwitch value={value.provider} onChange={(provider) => update("provider", provider)} />
@@ -469,7 +471,7 @@ export function App() {
     setSuccess("已通过本地 Codex CLI 生成 5 份封面 Prompt，默认不包含真人、脸、手和动物。");
   };
 
-  const generateCoverImage = (promptId = selectedPromptId) => {
+  const generateCoverImage = async (promptId = selectedPromptId) => {
     const prompt = prompts.find((item) => item.id === promptId);
     if (!prompt) {
       setError("image");
@@ -478,14 +480,58 @@ export function App() {
     if (!requireImageModel()) return;
 
     setSelectedPromptId(promptId);
-    setCoverImage({
-      promptId,
-      src: "/assets/spring-outfit.png",
-      alt: "薄荷绿夏日通勤穿搭静物封面图",
-      createdAt: nowText(),
+    setGeneratingKind("coverImage");
+    setCliStatus({
+      state: "running",
+      text: "正在通过本地 Codex CLI 生成封面图...",
+      commandPreview: "codex exec ...",
+      durationMs: null,
+      generatedAt: "",
+      code: "",
     });
-    setActiveStep("cover");
-    setSuccess("已生成封面图 mock 结果，原始 Prompt 已保留。");
+
+    try {
+      const result = await requestCodexCoverImage({
+        persona,
+        keyword,
+        selectedDraft,
+        selectedPrompt: prompt,
+        prompt: prompt.prompt,
+        modelName: modelConfig.image.modelName,
+      });
+
+      setCoverImage({
+        promptId,
+        src: result.image.src,
+        alt: result.image.alt,
+        title: result.image.title,
+        createdAt: nowText(),
+        generatedAt: result.generatedAt,
+      });
+      setCliStatus({
+        state: "success",
+        text: "Codex CLI 已生成封面图。",
+        commandPreview: result.commandPreview,
+        durationMs: result.durationMs,
+        generatedAt: result.generatedAt,
+        code: "",
+      });
+      setActiveStep("cover");
+      setSuccess("已通过本地 Codex CLI 生成封面图，原始 Prompt 已保留。");
+    } catch (error) {
+      const message = error?.message || "Codex CLI 封面图生成失败。";
+      setCliStatus({
+        state: "error",
+        text: message,
+        commandPreview: "",
+        durationMs: null,
+        generatedAt: "",
+        code: error?.code || "CODEX_FAILED",
+      });
+      setCustomError(message);
+    } finally {
+      setGeneratingKind("");
+    }
   };
 
   const saveDraft = () => {
@@ -834,6 +880,7 @@ export function App() {
                   <button
                     key={prompt.id}
                     className={selectedPromptId === prompt.id ? "prompt-card selected" : "prompt-card"}
+                    disabled={Boolean(generatingKind)}
                     onClick={() => generateCoverImage(prompt.id)}
                     type="button"
                   >
@@ -846,9 +893,19 @@ export function App() {
           </article>
 
           <article className="cover-result clay-panel">
-            <SectionHeader icon="成" tone="mint" title="封面结果" meta={coverImage ? `生成于 ${coverImage.createdAt}` : "点击 Prompt 后生成"} />
+            <SectionHeader
+              icon="成"
+              tone="mint"
+              title="封面结果"
+              meta={generatingKind === "coverImage" ? "正在生成封面图" : coverImage ? `生成于 ${coverImage.createdAt}` : "点击 Prompt 后生成"}
+            />
             <div className="cover-frame">
-              {coverImage ? (
+              {generatingKind === "coverImage" ? (
+                <div className="cover-placeholder">
+                  <SoftIcon tone="mint">成</SoftIcon>
+                  <p>Codex CLI 正在生成封面图...</p>
+                </div>
+              ) : coverImage ? (
                 <img src={coverImage.src} alt={coverImage.alt} />
               ) : (
                 <div className="cover-placeholder">
@@ -860,7 +917,14 @@ export function App() {
             <div className="prompt-keeper">
               <span>原始 Prompt</span>
               <p>{selectedPrompt?.prompt ?? "尚未选择封面 Prompt。"}</p>
-              <button className="soft-button mint" type="button" onClick={() => generateCoverImage()}>重新生成</button>
+              <button
+                className="soft-button mint"
+                disabled={Boolean(generatingKind)}
+                type="button"
+                onClick={() => generateCoverImage()}
+              >
+                {generatingKind === "coverImage" ? "生成中..." : "重新生成"}
+              </button>
             </div>
           </article>
         </section>

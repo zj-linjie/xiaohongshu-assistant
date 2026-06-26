@@ -13,7 +13,7 @@
 - AI 按阶段生成 10 个选题、5 篇文案、5 份封面 Prompt 和封面图。
 - 文案正文包含小红书话题标签，格式为 `#话题名称[话题]#`。
 - 文案生成模型和图片生成模型支持单独配置，并自动缓存。
-- 当前版本通过本地 Codex CLI 真实生成选题、文案和封面 Prompt；热门搜索、RAG 来源和封面图仍使用本地 mock 数据表达流程。
+- 当前版本通过本地 Codex CLI 真实生成选题、文案、封面 Prompt 和 imagegen PNG 封面图；热门搜索和 RAG 来源仍使用本地 mock 数据表达流程。
 
 ## 风控边界
 
@@ -30,6 +30,7 @@
 - 应用入口：`src/App.jsx`
 - 全局样式和视觉 token：`src/styles.css`
 - 本地 Codex API：`server/codex/`
+- 临时封面图托管：`/generated/covers/*.png`
 - 资源文件：`public/assets/`
 
 ## 开发命令

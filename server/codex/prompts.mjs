@@ -85,7 +85,7 @@ export function buildCodexPrompt(payload) {
       `Selected draft cover direction: ${compactText(draft.coverDirection, 360)}`,
       "",
       "Task: Generate exactly 5 cover image prompts for Xiaohongshu.",
-      "Every prompt must explicitly exclude real people, faces, hands, and animals.",
+      "Every prompt must include this exact Chinese boundary phrase: 明确排除真人、脸、手和动物。",
       "Plants or flowers are allowed. Keep prompts static-life, product/editorial photography oriented.",
       "Return this exact JSON shape:",
       '{"items":[{"title":"string","prompt":"string"}]}',
