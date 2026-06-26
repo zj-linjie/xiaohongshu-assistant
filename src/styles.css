@@ -13,9 +13,9 @@
 body {
   margin: 0;
   min-width: 1280px;
-  min-height: 100vh;
+  height: 100vh;
   overflow-x: auto;
-  overflow-y: auto;
+  overflow-y: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -33,18 +33,18 @@ button {
 
 .app-shell {
   width: 1440px;
-  min-height: 1160px;
+  height: 100vh;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 234px minmax(0, 1fr) 306px;
-  align-items: start;
+  align-items: stretch;
   gap: 22px;
   padding: 18px;
   background:
     radial-gradient(circle at 8% 12%, rgba(210, 184, 255, 0.48), transparent 28%),
     radial-gradient(circle at 80% 0%, rgba(255, 214, 232, 0.58), transparent 34%),
     linear-gradient(135deg, #f3e8ff 0%, #fff0f7 43%, #fff7ec 100%);
-  overflow: visible;
+  overflow: hidden;
 }
 
 .clay-panel {
@@ -116,8 +116,43 @@ button {
 }
 
 .sidebar,
+.workspace,
 .config-rail {
-  min-height: 1124px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.sidebar::-webkit-scrollbar,
+.workspace::-webkit-scrollbar,
+.config-rail::-webkit-scrollbar,
+.result-list::-webkit-scrollbar,
+.rag-stack::-webkit-scrollbar,
+.draft-list::-webkit-scrollbar {
+  width: 10px;
+}
+
+.sidebar::-webkit-scrollbar-track,
+.workspace::-webkit-scrollbar-track,
+.config-rail::-webkit-scrollbar-track,
+.result-list::-webkit-scrollbar-track,
+.rag-stack::-webkit-scrollbar-track,
+.draft-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.36);
+  border-radius: 999px;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.workspace::-webkit-scrollbar-thumb,
+.config-rail::-webkit-scrollbar-thumb,
+.result-list::-webkit-scrollbar-thumb,
+.rag-stack::-webkit-scrollbar-thumb,
+.draft-list::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(255, 255, 255, 0.42);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(208, 145, 239, 0.66), rgba(114, 217, 199, 0.66));
 }
 
 .sidebar {
@@ -400,6 +435,7 @@ button {
   display: grid;
   gap: 12px;
   min-width: 0;
+  padding-right: 2px;
 }
 
 .overview {
