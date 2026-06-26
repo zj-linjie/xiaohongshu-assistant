@@ -3,59 +3,52 @@
 ## 当前状态
 
 - 项目：`薄荷工坊 / Mint Atelier`
-- 类型：React + Vite 桌面端小红书图文生成器
-- 主要界面：3 列小红书内容创作工作台
+- 类型：React + Vite 桌面端小红书 AI 助理设计稿
+- 主要界面：3 列阶段式小红书内容创作工作台
 - 视觉方向：Pastel 3D Claymorphism Dashboard
 - 当前 QA 结论：通过
 
 ## 当前实现核对
 
-- 左侧：品牌、创作者资料、主导航、项目列表、设置入口。
-- 中间：今日概览、输入灵感、编辑草稿、效果预览、最近任务。
-- 右侧：模型配置、Codex 参数、运行历史。
-- 右侧以文案模型、图片模型、运行方式、Codex 参数和运行历史为主要内容。
-- 当前 UI 使用本地 React state 驱动可见交互；真实生成链路后续接入。
+- 左侧：品牌、创作者资料、创作流程、草稿项目、保存入口。
+- 中间：新版概览、人设关键词、热门内容搜索、RAG 入库、10 个选题、撰写思路、5 篇文案、小红书预览、5 份封面 Prompt 和封面图结果。
+- 右侧：文案生成模型配置、图片生成模型配置、状态与错误提示、错误覆盖检查。
+- 当前 UI 使用本地 mock 数据和 React state 驱动可见交互；真实搜索、真实 RAG、真实模型调用和真实图片生成后续接入。
+- 人设、关键词、撰写思路和模型配置使用 `localStorage` 自动缓存。
 
-## 右侧配置栏 QA
+## 新版流程 QA 重点
 
-模型配置：
-
-- 文案生成和图片生成分开设置。
-- 每个生成通道都有 `本地 CLI` 和 `云端 API` 两种运行方式。
-- 文案模型可在本地 CLI 与云端 API 间切换。
-- 图片模型默认展示云端 API 路线，并保留本地 CLI 选项。
-
-Codex 参数：
-
-- `Sandbox -s` 可选择 `read-only`、`workspace-write`、`danger-full-access`。
-- `Approval -a` 可选择 `untrusted`、`on-request`、`never`。
-- `Reasoning effort` 可在 `low`、`medium`、`high` 间切换。
-- `Verbosity` 可在 `low`、`medium`、`high` 间切换。
-- `Web Search --search` 可开关。
-- 底部命令预览会随文案模型、sandbox 和 approval 变化。
+- 搜索必须由用户点击触发，搜索结果不会自动加入 RAG。
+- RAG 入库必须先勾选搜索结果，再点击加入。
+- 生成选题、生成文案、生成封面 Prompt、生成封面图都必须由用户点击触发。
+- 封面 Prompt 默认不包含真人、脸、手和动物，可以包含植物或花材。
+- 封面图生成失败时必须保留原始 Prompt，方便重新生成。
+- 云端 API 缺少 API Key、API Base URL 或模型名称时，需要显示模型配置缺失提示。
 
 ## 最近验证记录
 
 验证环境：
 
-- in-app browser
-- 当前页面：`http://127.0.0.1:5174/`
-- 构建命令：`npm run build`
-- 视口检查：1440x900 与较矮视口
+- 命令：`npm run build`
+- 浏览器：in-app browser
+- URL：`http://127.0.0.1:5174/`
+- 视口：1440x900 和 1440x720 CSS px
 
 已验证：
 
-- 页面不是空白页。
-- 无 Vite / React 错误覆盖层。
+- 生产构建可以完成。
+- 页面不是空白页，无 Vite / React 错误覆盖层。
 - Console `error` / `warn` 为 0。
-- 右侧出现文案生成、图片生成、本地 CLI、云端 API 和 Codex 参数。
-- 切换文案模型到云端 API 后，模型下拉更新为云端模型。
-- 切换 sandbox、reasoning effort 和 Web Search 后，状态正常更新。
-- 页面在较矮视口中仍可纵向滚动，右侧运行历史可继续访问。
+- 1440x900 下保持 3 列工作台，无横向溢出。
+- 1440x720 下可以纵向滚动，左侧保存入口、右侧错误覆盖和底部封面区均可访问。
+- 主流程可点击推进：搜索、勾选入库、生成 10 个选题、生成 5 篇文案、生成 5 份 Prompt、点击 Prompt 生成封面图。
+- 云端 API 配置缺失时显示模型配置缺失提示。
+- 新版规格已写入 `SPEC.md`。
+- `AGENTS.md`、`README.md`、`docs/DESIGN.md`、`docs/VERIFICATION.md` 已同步到新版阶段式流程。
 
 ## 后续注意
 
 - 视觉或布局改动后，至少重新执行 `npm run build`。
-- 涉及右栏改动时，必须同时检查模型配置、Codex 参数和运行历史。
+- 浏览器 QA 时必须检查页面不是空白页、无 Vite / React 错误覆盖层、Console `error` / `warn` 为 0。
 - 涉及 `xiaohongshu-cli`、搜索、RAG 入库或生成链路时，必须检查用户主动触发和确认边界。
 - 截图证据默认作为临时 QA 产物，不需要提交到仓库，除非用户明确要求。
