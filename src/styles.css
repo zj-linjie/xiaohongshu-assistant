@@ -144,6 +144,12 @@ button {
   border-radius: 999px;
 }
 
+.sidebar::-webkit-scrollbar-track,
+.workspace::-webkit-scrollbar-track,
+.config-rail::-webkit-scrollbar-track {
+  margin-block: 20px;
+}
+
 .sidebar::-webkit-scrollbar-thumb,
 .workspace::-webkit-scrollbar-thumb,
 .config-rail::-webkit-scrollbar-thumb,
