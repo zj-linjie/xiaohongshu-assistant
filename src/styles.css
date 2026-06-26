@@ -452,14 +452,26 @@ button {
   padding: 20px 34px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 82% 22%, rgba(255, 220, 146, 0.35), transparent 24%),
-    linear-gradient(145deg, rgba(255, 251, 246, 0.86), rgba(255, 235, 244, 0.72));
+    radial-gradient(circle at 82% 22%, rgba(255, 220, 146, 0.32), transparent 24%),
+    radial-gradient(ellipse at 74% 84%, rgba(255, 235, 244, 0.58), transparent 68%);
+  box-shadow:
+    12px 15px 34px rgba(145, 103, 173, 0.16),
+    inset 0 2px 6px rgba(255, 255, 255, 0.86),
+    inset 0 -8px 16px rgba(205, 169, 206, 0.09);
 }
 
 .overview-copy {
   position: relative;
   z-index: 1;
   width: 68%;
+}
+
+.overview .stage-badge,
+.overview .stage-badge.mint {
+  min-height: auto;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .overview h2 {
@@ -1242,6 +1254,16 @@ button {
 .config-rail .clay-panel {
   padding: 15px;
   overflow: visible;
+}
+
+.model-card {
+  background:
+    radial-gradient(circle at 88% 8%, rgba(210, 184, 255, 0.24), transparent 32%),
+    radial-gradient(ellipse at 72% 92%, rgba(255, 235, 244, 0.56), transparent 70%);
+  box-shadow:
+    12px 15px 34px rgba(145, 103, 173, 0.16),
+    inset 0 2px 6px rgba(255, 255, 255, 0.86),
+    inset 0 -8px 16px rgba(205, 169, 206, 0.09);
 }
 
 .model-route-list {
