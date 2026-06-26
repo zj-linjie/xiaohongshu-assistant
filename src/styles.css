@@ -131,7 +131,7 @@ button {
 .result-list::-webkit-scrollbar,
 .rag-stack::-webkit-scrollbar,
 .draft-list::-webkit-scrollbar {
-  width: 10px;
+  width: 7px;
 }
 
 .sidebar::-webkit-scrollbar-track,
@@ -140,7 +140,7 @@ button {
 .result-list::-webkit-scrollbar-track,
 .rag-stack::-webkit-scrollbar-track,
 .draft-list::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.36);
+  background: rgba(255, 255, 255, 0.18);
   border-radius: 999px;
 }
 
@@ -150,9 +150,9 @@ button {
 .result-list::-webkit-scrollbar-thumb,
 .rag-stack::-webkit-scrollbar-thumb,
 .draft-list::-webkit-scrollbar-thumb {
-  border: 2px solid rgba(255, 255, 255, 0.42);
+  border: 2px solid rgba(255, 255, 255, 0.36);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(208, 145, 239, 0.66), rgba(114, 217, 199, 0.66));
+  background: linear-gradient(180deg, rgba(196, 150, 232, 0.42), rgba(120, 210, 194, 0.42));
 }
 
 .sidebar {
@@ -235,9 +235,9 @@ button {
 }
 
 .profile-card {
-  gap: 12px;
-  padding: 14px;
-  min-height: 108px;
+  gap: 10px;
+  padding: 13px;
+  min-height: 104px;
   border-radius: 26px;
   background: linear-gradient(145deg, rgba(236, 226, 255, 0.82), rgba(255, 244, 251, 0.9));
   box-shadow:
@@ -246,28 +246,35 @@ button {
 }
 
 .profile-card img {
-  width: 62px;
-  height: 62px;
+  width: 60px;
+  height: 60px;
   object-fit: cover;
   border: 5px solid rgba(255, 255, 255, 0.78);
   border-radius: 50%;
   box-shadow: 6px 8px 16px rgba(129, 85, 148, 0.18);
 }
 
+.profile-card > div {
+  min-width: 0;
+}
+
 .profile-card h2 {
   font-size: 17px;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .profile-card span {
   display: inline-flex;
   margin-top: 8px;
-  padding: 5px 10px;
+  padding: 5px 9px;
   border-radius: 999px;
   color: #8b4dd8;
   background: #eadcff;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .profile-card p {
@@ -276,6 +283,7 @@ button {
   color: #716a86;
   font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .profile-card i {
@@ -440,8 +448,8 @@ button {
 
 .overview {
   position: relative;
-  min-height: 186px;
-  padding: 24px 34px;
+  min-height: 228px;
+  padding: 20px 34px;
   overflow: hidden;
   background:
     radial-gradient(circle at 82% 22%, rgba(255, 220, 146, 0.35), transparent 24%),
@@ -455,30 +463,30 @@ button {
 }
 
 .overview h2 {
-  margin-top: 10px;
-  font-size: 28px;
+  margin-top: 8px;
+  font-size: 27px;
   line-height: 1.15;
 }
 
 .overview p {
   width: 88%;
-  margin-top: 8px;
+  margin-top: 7px;
   color: #837894;
   font-size: 14px;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-top: 18px;
+  gap: 12px;
+  margin-top: 14px;
 }
 
 .metric {
-  min-height: 64px;
-  padding: 11px 14px;
+  min-height: 58px;
+  padding: 10px 13px;
   border-radius: 19px;
   background: rgba(255, 255, 255, 0.64);
   box-shadow:
@@ -495,9 +503,9 @@ button {
 
 .metric strong {
   display: inline-block;
-  margin-top: 8px;
+  margin-top: 7px;
   color: #47339a;
-  font-size: 27px;
+  font-size: 24px;
   line-height: 1;
 }
 
@@ -512,9 +520,9 @@ button {
 .hero-asset {
   position: absolute;
   right: 26px;
-  top: 4px;
-  width: 240px;
-  height: 178px;
+  top: 8px;
+  width: 226px;
+  height: 166px;
   object-fit: contain;
   mix-blend-mode: multiply;
   opacity: 0.94;
@@ -527,14 +535,14 @@ button {
 .stage-card,
 .preview,
 .cover-result {
-  padding: 18px;
-  overflow: visible;
+  padding: 16px;
+  overflow: hidden;
 }
 
 .section-header {
   justify-content: space-between;
   gap: 16px;
-  min-height: 42px;
+  min-height: 40px;
 }
 
 .section-header > div {
@@ -578,7 +586,7 @@ button {
 
 .primary-button {
   min-width: 116px;
-  height: 42px;
+  height: 40px;
   padding: 0 18px;
   color: #fff;
   background: linear-gradient(180deg, #ff9bd8, #d56dd1);
@@ -588,7 +596,7 @@ button {
 
 .soft-button {
   min-width: 100px;
-  height: 38px;
+  height: 36px;
   padding: 0 14px;
   color: #4f4969;
   background: #fff9ff;
@@ -610,7 +618,12 @@ button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 280px;
   gap: 14px;
-  margin-top: 14px;
+  margin-top: 12px;
+  align-items: stretch;
+}
+
+.input-panel {
+  min-height: 276px;
 }
 
 .field {
@@ -647,9 +660,9 @@ button {
 }
 
 .field textarea {
-  height: 108px;
+  height: 132px;
   resize: vertical;
-  min-height: 84px;
+  min-height: 118px;
   max-height: 180px;
   padding: 12px 14px;
   line-height: 1.58;
@@ -665,7 +678,7 @@ button {
 }
 
 .keyword-field input {
-  height: 108px;
+  height: 132px;
   padding-top: 0;
   font-size: 17px;
 }
@@ -692,7 +705,11 @@ button {
 .stage-card,
 .preview,
 .cover-result {
-  min-height: 280px;
+  min-height: 256px;
+}
+
+.wide-card:has(.topic-card) {
+  min-height: 452px;
 }
 
 .result-list,
@@ -700,8 +717,8 @@ button {
 .draft-list,
 .prompt-list {
   display: grid;
-  gap: 10px;
-  margin-top: 14px;
+  gap: 9px;
+  margin-top: 12px;
 }
 
 .result-list {
@@ -713,10 +730,10 @@ button {
 .search-result {
   display: grid;
   grid-template-columns: 22px 1fr;
-  gap: 10px;
-  padding: 13px;
-  border: 1px solid rgba(235, 221, 233, 0.88);
-  border-radius: 22px;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid rgba(235, 221, 233, 0.82);
+  border-radius: 20px;
   color: #4e445f;
   background: rgba(255, 255, 255, 0.62);
   box-shadow:
@@ -795,8 +812,8 @@ button {
 }
 
 .rag-item {
-  padding: 14px;
-  border-radius: 20px;
+  padding: 12px;
+  border-radius: 19px;
   background: rgba(255, 255, 255, 0.64);
   box-shadow:
     5px 7px 15px rgba(116, 89, 139, 0.1),
@@ -829,19 +846,20 @@ button {
 .topic-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 14px;
+  gap: 9px;
+  margin-top: 12px;
 }
 
 .topic-card {
   position: relative;
-  min-height: 168px;
-  padding: 14px;
+  min-height: 144px;
+  padding: 11px;
   border: 1px solid rgba(235, 221, 233, 0.88);
   border-radius: 22px;
   color: #4e445f;
   background: rgba(255, 255, 255, 0.64);
   text-align: left;
+  overflow: hidden;
   box-shadow:
     5px 7px 15px rgba(116, 89, 139, 0.1),
     inset 0 2px 7px rgba(255, 255, 255, 0.84);
@@ -866,31 +884,45 @@ button {
 }
 
 .topic-card strong {
-  display: block;
-  margin-top: 8px;
+  display: -webkit-box;
+  margin-top: 7px;
+  overflow: hidden;
   color: #34294b;
   font-size: 13px;
   line-height: 1.36;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .topic-card p {
-  margin-top: 8px;
+  display: -webkit-box;
+  margin-top: 7px;
+  overflow: hidden;
   color: #766a85;
   font-size: 11px;
   font-weight: 700;
   line-height: 1.43;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .topic-card small {
   display: block;
-  margin-top: 8px;
+  margin-top: 7px;
+  overflow: hidden;
   color: #5a4d73;
   font-size: 11px;
   font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topic-card em {
-  margin-top: 9px;
+  margin-top: 8px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .brief-field textarea {
@@ -907,7 +939,7 @@ button {
 .draft-card,
 .prompt-card {
   width: 100%;
-  padding: 14px;
+  padding: 12px;
   border: 1px solid rgba(235, 221, 233, 0.88);
   border-radius: 22px;
   color: #4e445f;
@@ -962,8 +994,8 @@ button {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  margin: 14px auto 0;
-  padding: 14px;
+  margin: 12px auto 0;
+  padding: 13px;
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.86);
   box-shadow:
@@ -1036,15 +1068,12 @@ button {
 }
 
 .post-card p {
-  display: -webkit-box;
+  display: block;
   margin-top: 8px;
-  overflow: hidden;
   color: #72677c;
   font-size: 12px;
   line-height: 1.5;
   white-space: pre-line;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 7;
 }
 
 .post-card footer {
@@ -1085,11 +1114,11 @@ button {
 .post-icon.chat { color: #376ca9; background: linear-gradient(145deg, #ddf6ff, #f1e7ff); }
 
 .prompt-list {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .prompt-card {
-  min-height: 150px;
+  min-height: 136px;
 }
 
 .prompt-card p {
@@ -1111,7 +1140,7 @@ button {
 
 .cover-frame {
   width: 100%;
-  margin-top: 14px;
+  margin-top: 12px;
   overflow: hidden;
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.68);
@@ -1146,8 +1175,8 @@ button {
 }
 
 .prompt-keeper {
-  margin-top: 12px;
-  padding: 13px;
+  margin-top: 11px;
+  padding: 12px;
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.66);
   box-shadow:
@@ -1178,13 +1207,13 @@ button {
 }
 
 .empty-state {
-  min-height: 170px;
+  min-height: 126px;
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 10px;
-  padding: 24px;
-  border-radius: 24px;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 22px;
   color: #756b86;
   background: rgba(255, 255, 255, 0.58);
   text-align: center;
@@ -1193,15 +1222,15 @@ button {
 
 .empty-state.inline {
   grid-column: 1 / -1;
-  min-height: 140px;
+  min-height: 112px;
 }
 
 .empty-state p {
   max-width: 320px;
   color: #756b86;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
-  line-height: 1.46;
+  line-height: 1.42;
 }
 
 .config-rail {
@@ -1211,19 +1240,19 @@ button {
 }
 
 .config-rail .clay-panel {
-  padding: 16px;
+  padding: 15px;
   overflow: visible;
 }
 
 .model-route-list {
   display: grid;
-  gap: 10px;
-  margin-top: 12px;
+  gap: 9px;
+  margin-top: 10px;
 }
 
 .model-config-block {
-  padding: 12px;
-  border-radius: 22px;
+  padding: 11px;
+  border-radius: 21px;
   background: rgba(255, 255, 255, 0.62);
   box-shadow:
     6px 8px 16px rgba(120, 91, 145, 0.1),
@@ -1256,15 +1285,15 @@ button {
 .provider-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  margin-top: 10px;
+  gap: 5px;
+  margin-top: 9px;
   padding: 4px;
   border-radius: 999px;
   background: rgba(245, 235, 250, 0.8);
 }
 
 .provider-switch button {
-  height: 30px;
+  height: 29px;
   color: #80738d;
   background: transparent;
   box-shadow: none;
@@ -1275,13 +1304,13 @@ button {
   color: #267c71;
   background: linear-gradient(145deg, #bdf1e8, #eafffb);
   box-shadow:
-    4px 5px 10px rgba(82, 157, 145, 0.14),
+    3px 4px 9px rgba(82, 157, 145, 0.12),
     inset 0 2px 5px rgba(255, 255, 255, 0.82);
 }
 
 .mini-field {
   display: block;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .mini-field span {
@@ -1293,7 +1322,7 @@ button {
 }
 
 .mini-field input {
-  height: 36px;
+  height: 34px;
   border-radius: 15px;
   font-size: 12px;
 }
@@ -1374,5 +1403,9 @@ button {
   .topic-grid,
   .prompt-list {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .prompt-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
