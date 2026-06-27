@@ -52,6 +52,30 @@ export async function requestCloudGeneration(payload) {
   );
 }
 
+export async function requestCodexDecision(payload) {
+  return requestJson(
+    "/api/codex/decide",
+    payload,
+    {
+      nonJson: "本地决策服务返回了非 JSON 内容。",
+      failed: "Codex CLI 决策失败。",
+    },
+    "CODEX_BAD_JSON",
+  );
+}
+
+export async function requestCloudDecision(payload) {
+  return requestJson(
+    "/api/cloud/decide",
+    payload,
+    {
+      nonJson: "云端文本 API 返回了非 JSON 内容。",
+      failed: "云端文本 API 决策失败。",
+    },
+    "API_BAD_JSON",
+  );
+}
+
 export async function requestCodexCoverImage(payload) {
   return requestJson(
     "/api/codex/cover-image",

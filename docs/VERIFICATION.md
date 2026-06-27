@@ -30,6 +30,14 @@ curl -sS http://127.0.0.1:5173/api/codex/generate \
   --data '{"kind":"topics","persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","ragItems":[{"id":"note-1","title":"通勤清爽穿搭","excerpt":"薄针织、棉麻半裙和低饱和配色。","tags":["通勤穿搭"],"metrics":"赞 1000","source":"manual"}],"modelName":"Codex CLI"}'
 ```
 
+本地模型决策 API smoke test：
+
+```bash
+curl -sS http://127.0.0.1:5173/api/codex/decide \
+  -H 'Content-Type: application/json' \
+  --data '{"decisionKind":"topic","persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","writingBrief":"清爽通勤","ragItems":[{"id":"note-1","title":"通勤清爽穿搭","excerpt":"薄针织、棉麻半裙和低饱和配色。","tags":["通勤穿搭"],"metrics":"赞 1000","source":"manual"}],"options":[{"id":"topic-1","title":"35 度通勤也清爽","angle":"棉麻半裙搭配","audience":"上班族","reason":"具体可执行","hook":"不闷热"},{"id":"topic-2","title":"周末出行轻便搭","angle":"轻便出行","audience":"周末出门人群","reason":"轻松","hook":"少带也好看"}],"modelName":"Codex CLI"}'
+```
+
 封面图 API smoke test：
 
 ```bash
@@ -46,6 +54,14 @@ curl -sS http://127.0.0.1:5173/api/codex/cover-image \
 curl -sS http://127.0.0.1:5173/api/cloud/generate \
   -H 'Content-Type: application/json' \
   --data '{"kind":"topics","persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","ragItems":[{"id":"note-1","title":"通勤清爽穿搭","excerpt":"薄针织、棉麻半裙和低饱和配色。","tags":["通勤穿搭"],"metrics":"赞 1000","source":"manual"}],"modelName":"gpt-compatible","apiKey":"test-key","baseUrl":"http://127.0.0.1:5999/v1"}'
+```
+
+云端模型决策 API smoke test 需要使用真实 OpenAI-compatible provider 或本地 mock provider：
+
+```bash
+curl -sS http://127.0.0.1:5173/api/cloud/decide \
+  -H 'Content-Type: application/json' \
+  --data '{"decisionKind":"rag","persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","writingBrief":"清爽通勤","ragItems":[],"options":[{"id":"xhs-1","title":"通勤清爽穿搭","excerpt":"薄针织、棉麻半裙和低饱和配色。","tags":["通勤穿搭"],"metrics":"赞 1000","source":"manual"},{"id":"xhs-2","title":"露营装备","excerpt":"帐篷和户外装备。","tags":["露营"],"metrics":"赞 100","source":"manual"}],"modelName":"gpt-compatible","apiKey":"test-key","baseUrl":"http://127.0.0.1:5999/v1"}'
 ```
 
 云端图片 API smoke test 需要确认响应里的 `image.src` 仍是 `/generated/covers/*.png`，并请求该 URL 验证 PNG：
@@ -92,12 +108,15 @@ npx playwright@1.61.1 screenshot --viewport-size=1440,720 --full-page http://127
 修改产品结构或交互后，至少检查：
 
 - 人设、关键词和撰写思路可以编辑，并写入 `localStorage`。
+- “自动化生成”按钮位于“搜索热门内容”按钮左侧，按钮文案完整且不挤压标题区。
 - 点击搜索热门内容后展示搜索结果，且不会自动加入 RAG。
 - 勾选搜索结果后点击加入 RAG，RAG 区域显示所选内容。
 - 点击生成选题后通过所选文本通道返回 10 个选题，选中态可切换。
 - 点击生成文案后通过所选文本通道返回 5 篇文案，选中态可切换，小红书预览同步更新。
 - 点击生成 Prompt 后通过所选文本通道返回 5 份封面 Prompt。
 - 点击某个 Prompt 后通过所选图片通道生成并展示 PNG 封面图，并保留原始 Prompt。
+- 点击“自动化生成”后，系统按搜索、模型选择并入库 RAG、生成并选择选题、生成并选择文案、生成并选择封面 Prompt、生成封面图的顺序串行推进。
+- 自动化流程中右侧状态卡显示当前自动化阶段；中途失败时保留已完成阶段的可见结果和选中态，并显示具体错误。
 - 文案模型和图片模型可分别切换本地 CLI / 云端 API，并编辑模型名称、API Key 和 API Base URL。
 - 云端 API 缺少模型名、API Key 或 API Base URL 时，生成动作显示配置缺失提示且不发请求。
 - 右侧状态卡显示最近一次生成通道、本地命令或云端 endpoint 摘要、耗时或错误码。

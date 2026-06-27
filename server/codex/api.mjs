@@ -5,14 +5,17 @@ import {
 } from "./coverImage.mjs";
 import {
   runCloudCoverImage,
+  runCloudDecision,
   runCloudGeneration,
 } from "./cloudProvider.mjs";
-import { buildCodexPrompt } from "./prompts.mjs";
+import { buildCodexPrompt, buildDecisionPrompt } from "./prompts.mjs";
 import { runCodex } from "./runCodex.mjs";
 import {
   CodexApiError,
+  normalizeDecisionResult,
   normalizeCodexItems,
   parseJsonFromCodex,
+  validateDecisionRequest,
   validateRequest,
 } from "./validation.mjs";
 import {
@@ -77,8 +80,10 @@ export function codexGenerateMiddleware() {
 
     const handledPath = new Set([
       "/api/codex/generate",
+      "/api/codex/decide",
       "/api/codex/cover-image",
       "/api/cloud/generate",
+      "/api/cloud/decide",
       "/api/cloud/cover-image",
       "/api/xhs/search",
     ]);
@@ -143,6 +148,48 @@ export function codexGenerateMiddleware() {
           raw: cloudResult.raw,
           commandPreview: cloudResult.commandPreview,
           durationMs: cloudResult.durationMs,
+          generatedAt: new Date().toISOString(),
+        });
+        return;
+      }
+
+      if (requestUrl.pathname === "/api/cloud/decide") {
+        validateDecisionRequest(payload);
+        const cloudResult = await runCloudDecision(payload);
+
+        sendJson(res, 200, {
+          ok: true,
+          kind: "decision",
+          decisionKind: payload.decisionKind,
+          selectedIds: cloudResult.selectedIds,
+          reason: cloudResult.reason,
+          raw: cloudResult.raw,
+          commandPreview: cloudResult.commandPreview,
+          durationMs: cloudResult.durationMs,
+          generatedAt: new Date().toISOString(),
+        });
+        return;
+      }
+
+      if (requestUrl.pathname === "/api/codex/decide") {
+        validateDecisionRequest(payload);
+        const prompt = buildDecisionPrompt(payload);
+        const codexResult = await runCodex({
+          prompt,
+          modelName: payload.modelName,
+        });
+        const parsed = parseJsonFromCodex(codexResult.raw);
+        const decision = normalizeDecisionResult(parsed, payload);
+
+        sendJson(res, 200, {
+          ok: true,
+          kind: "decision",
+          decisionKind: payload.decisionKind,
+          selectedIds: decision.selectedIds,
+          reason: decision.reason,
+          raw: codexResult.raw,
+          commandPreview: codexResult.commandPreview,
+          durationMs: codexResult.durationMs,
           generatedAt: new Date().toISOString(),
         });
         return;

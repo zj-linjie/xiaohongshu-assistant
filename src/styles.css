@@ -584,6 +584,13 @@ button {
   min-height: 40px;
 }
 
+.section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .section-header > div {
   min-width: 0;
   gap: 10px;
@@ -658,6 +665,12 @@ button {
 .soft-button.yellow {
   color: #8f6810;
   background: linear-gradient(145deg, #fff0ba, #fff9e8);
+}
+
+.automation-button {
+  min-width: 112px;
+  color: #fff;
+  background: linear-gradient(180deg, #7fdcca, #9b7cf2);
 }
 
 .input-grid {

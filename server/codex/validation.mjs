@@ -1,4 +1,5 @@
 const VALID_KINDS = new Set(["topics", "drafts", "coverPrompts"]);
+const VALID_DECISION_KINDS = new Set(["rag", "topic", "draft", "coverPrompt"]);
 
 export class CodexApiError extends Error {
   constructor(code, message, status = 400, details = undefined) {
@@ -36,6 +37,60 @@ export function validateRequest(payload) {
   }
 
   if (payload.kind === "coverPrompts" && !payload.selectedDraft?.title) {
+    throw new CodexApiError("BAD_REQUEST", "请先选择一篇文案。");
+  }
+}
+
+function validateBaseWorkflowPayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    throw new CodexApiError("BAD_REQUEST", "请求体必须是 JSON 对象。");
+  }
+
+  if (!String(payload.persona ?? "").trim()) {
+    throw new CodexApiError("BAD_REQUEST", "请先填写账号人设。");
+  }
+
+  if (!String(payload.keyword ?? "").trim()) {
+    throw new CodexApiError("BAD_REQUEST", "请先填写创作关键词。");
+  }
+}
+
+export function validateDecisionRequest(payload) {
+  validateBaseWorkflowPayload(payload);
+
+  if (!VALID_DECISION_KINDS.has(payload.decisionKind)) {
+    throw new CodexApiError("BAD_REQUEST", "决策类型无效。");
+  }
+
+  if (!Array.isArray(payload.options) || payload.options.length === 0) {
+    throw new CodexApiError("BAD_REQUEST", "请提供可供模型决策的候选项。");
+  }
+
+  if (payload.options.length > 30) {
+    throw new CodexApiError("BAD_REQUEST", "候选项过多，请控制在 30 条以内。");
+  }
+
+  const optionIds = new Set();
+  for (const option of payload.options) {
+    const id = typeof option?.id === "string" ? option.id.trim() : "";
+    if (!id) {
+      throw new CodexApiError("BAD_REQUEST", "每个候选项都必须包含 id。");
+    }
+    if (optionIds.has(id)) {
+      throw new CodexApiError("BAD_REQUEST", `候选项 id 重复：${id}。`);
+    }
+    optionIds.add(id);
+  }
+
+  if (payload.decisionKind !== "rag" && (!Array.isArray(payload.ragItems) || payload.ragItems.length === 0)) {
+    throw new CodexApiError("BAD_REQUEST", "请先将至少一条参考内容加入本地 RAG。");
+  }
+
+  if (payload.decisionKind === "draft" && !payload.selectedTopic?.title) {
+    throw new CodexApiError("BAD_REQUEST", "请先选择一个选题。");
+  }
+
+  if (payload.decisionKind === "coverPrompt" && !payload.selectedDraft?.title) {
     throw new CodexApiError("BAD_REQUEST", "请先选择一篇文案。");
   }
 }
@@ -143,6 +198,49 @@ export function parseJsonFromCodex(raw) {
   }
 
   throw new CodexApiError("CODEX_BAD_JSON", "Codex 返回内容不是合法 JSON。", 502, text.slice(0, 600));
+}
+
+export function normalizeDecisionResult(parsed, payload) {
+  const rawSelectedIds = Array.isArray(parsed?.selectedIds)
+    ? parsed.selectedIds
+    : typeof parsed?.selectedId === "string"
+      ? [parsed.selectedId]
+      : [];
+
+  const selectedIds = rawSelectedIds
+    .map((id) => (typeof id === "string" ? id.trim() : ""))
+    .filter(Boolean);
+
+  const optionIds = new Set(payload.options.map((option) => String(option.id).trim()));
+  const invalidIds = selectedIds.filter((id) => !optionIds.has(id));
+  const uniqueSelectedIds = new Set(selectedIds);
+
+  if (uniqueSelectedIds.size !== selectedIds.length) {
+    throw new CodexApiError("CODEX_BAD_JSON", "模型决策返回了重复的候选项 id。", 502);
+  }
+
+  if (invalidIds.length > 0) {
+    throw new CodexApiError(
+      "CODEX_BAD_JSON",
+      `模型决策返回了不存在的候选项 id：${invalidIds.join(", ")}。`,
+      502,
+    );
+  }
+
+  if (payload.decisionKind === "rag") {
+    if (selectedIds.length < 1 || selectedIds.length > 8) {
+      throw new CodexApiError("CODEX_BAD_JSON", "RAG 决策必须返回 1 到 8 个候选项 id。", 502);
+    }
+  } else if (selectedIds.length !== 1) {
+    throw new CodexApiError("CODEX_BAD_JSON", "该决策必须且只能返回 1 个候选项 id。", 502);
+  }
+
+  return {
+    selectedIds,
+    reason: typeof parsed?.reason === "string" && parsed.reason.trim()
+      ? parsed.reason.trim()
+      : "模型已根据当前人设、关键词、撰写思路和候选内容完成选择。",
+  };
 }
 
 export function normalizeCodexItems(kind, parsed, payload) {

@@ -1,7 +1,8 @@
 import { buildCoverImagePrompt, publishGeneratedPng } from "./coverImage.mjs";
-import { buildCodexPrompt } from "./prompts.mjs";
+import { buildCodexPrompt, buildDecisionPrompt } from "./prompts.mjs";
 import {
   CodexApiError,
+  normalizeDecisionResult,
   normalizeCodexItems,
   parseJsonFromCodex,
 } from "./validation.mjs";
@@ -201,6 +202,15 @@ function parseCloudItems(kind, raw, payload) {
   }
 }
 
+function parseCloudDecision(raw, payload) {
+  try {
+    const parsed = parseJsonFromCodex(raw);
+    return normalizeDecisionResult(parsed, payload);
+  } catch (error) {
+    mapCloudJsonError(error);
+  }
+}
+
 function chatBody({ payload, modelName, prompt }) {
   return {
     model: modelName,
@@ -236,6 +246,28 @@ export async function runCloudGeneration(payload) {
 
   return {
     items,
+    raw,
+    commandPreview: endpointPreview(endpointUrl),
+    durationMs: Date.now() - startedAt,
+  };
+}
+
+export async function runCloudDecision(payload) {
+  const { modelName, apiKey, baseUrl } = requireCloudConfig(payload);
+  const endpointUrl = resolveEndpointUrl(baseUrl, CHAT_ENDPOINT);
+  const prompt = buildDecisionPrompt(payload);
+  const startedAt = Date.now();
+  const result = await fetchJson({
+    url: endpointUrl,
+    apiKey,
+    timeoutMs: TEXT_TIMEOUT_MS,
+    body: chatBody({ payload, modelName, prompt }),
+  });
+  const raw = extractGeneratedText(result.json);
+  const decision = parseCloudDecision(raw, payload);
+
+  return {
+    ...decision,
     raw,
     commandPreview: endpointPreview(endpointUrl),
     durationMs: Date.now() - startedAt,

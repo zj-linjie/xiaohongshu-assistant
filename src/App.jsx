@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   requestCloudCoverImage,
+  requestCloudDecision,
   requestCloudGeneration,
   requestCodexCoverImage,
+  requestCodexDecision,
   requestCodexGeneration,
   requestXhsSearch,
 } from "./codexClient.js";
@@ -43,6 +45,13 @@ const generationLabels = {
   topics: "选题",
   drafts: "文案",
   coverPrompts: "封面 Prompt",
+};
+
+const decisionLabels = {
+  rag: "RAG 参考",
+  topic: "选题",
+  draft: "文案",
+  coverPrompt: "封面 Prompt",
 };
 
 const sidebarProjects = [
@@ -188,6 +197,9 @@ function ModelConfig({ title, tone, icon, value, onChange }) {
 }
 
 export function App() {
+  const personaRef = useRef(null);
+  const keywordRef = useRef(null);
+  const writingBriefRef = useRef(null);
   const [persona, setPersona] = useStoredState("persona", defaultPersona);
   const [keyword, setKeyword] = useStoredState("keyword", defaultKeyword);
   const [writingBrief, setWritingBrief] = useStoredState("writingBrief", defaultBrief);
@@ -205,6 +217,8 @@ export function App() {
   const [coverImage, setCoverImage] = useState(null);
   const [lastSavedAt, setLastSavedAt] = useState("");
   const [generatingKind, setGeneratingKind] = useState("");
+  const [automationRunning, setAutomationRunning] = useState(false);
+  const [automationStage, setAutomationStage] = useState("");
   const [cliStatus, setCliStatus] = useState({
     state: "idle",
     label: "生成通道",
@@ -216,7 +230,7 @@ export function App() {
   });
   const [notice, setNotice] = useState({
     type: "ready",
-    text: "已加载新版阶段式工作台，搜索和生成链路均为手动触发。",
+    text: "已加载新版阶段式工作台，支持手动逐步确认或一次点击自动化生成。",
   });
 
   const selectedTopic = useMemo(
@@ -270,6 +284,8 @@ export function App() {
   const setCustomError = (text) => {
     setNotice({ type: "error", text });
   };
+
+  const isBusy = Boolean(generatingKind) || automationRunning;
 
   const updateModelConfig = (channel, value) => {
     setModelConfig((current) => ({ ...current, [channel]: value }));
@@ -345,11 +361,96 @@ export function App() {
     };
   };
 
+  const workflowContext = (overrides = {}) => ({
+    persona: overrides.persona ?? persona,
+    keyword: overrides.keyword ?? keyword,
+    ragItems: overrides.ragItems ?? ragItems,
+    writingBrief: overrides.writingBrief ?? writingBrief,
+  });
+
+  const requestTextItems = async (kind, payload = {}, contextOverrides = {}) => {
+    const requestGeneration =
+      modelConfig.text.provider === "cloud" ? requestCloudGeneration : requestCodexGeneration;
+    const context = workflowContext(contextOverrides);
+    const result = await requestGeneration({
+      kind,
+      persona: context.persona,
+      keyword: context.keyword,
+      ragItems: context.ragItems,
+      writingBrief: context.writingBrief,
+      ...requestPayloadConfig("text"),
+      ...payload,
+    });
+
+    return {
+      items: result.items,
+      routeLabel: providerLabel("text"),
+      commandPreview: result.commandPreview,
+      durationMs: result.durationMs,
+      generatedAt: result.generatedAt,
+    };
+  };
+
+  const requestDecision = async (decisionKind, options, contextOverrides = {}, payload = {}) => {
+    const routeLabel = providerLabel("text");
+    const decisionLabel = decisionLabels[decisionKind] ?? "候选项";
+    const requestModelDecision =
+      modelConfig.text.provider === "cloud" ? requestCloudDecision : requestCodexDecision;
+    const context = workflowContext(contextOverrides);
+
+    setGeneratingKind(`decision-${decisionKind}`);
+    setCliStatus({
+      state: "running",
+      label: routeLabel,
+      text: `正在通过${routeLabel}选择${decisionLabel}...`,
+      commandPreview: providerPreview("text"),
+      durationMs: null,
+      generatedAt: "",
+      code: "",
+    });
+
+    const result = await requestModelDecision({
+      decisionKind,
+      persona: context.persona,
+      keyword: context.keyword,
+      ragItems: context.ragItems,
+      writingBrief: context.writingBrief,
+      options,
+      ...requestPayloadConfig("text"),
+      ...payload,
+    });
+
+    setCliStatus({
+      state: "success",
+      label: routeLabel,
+      text: `${routeLabel}已选择${decisionLabel}：${result.reason}`,
+      commandPreview: result.commandPreview,
+      durationMs: result.durationMs,
+      generatedAt: result.generatedAt,
+      code: "",
+    });
+
+    return { ...result, routeLabel };
+  };
+
+  const requestCoverImageResult = async (prompt, selectedDraftValue, contextOverrides = {}) => {
+    const requestCoverImage =
+      modelConfig.image.provider === "cloud" ? requestCloudCoverImage : requestCodexCoverImage;
+    const context = workflowContext(contextOverrides);
+
+    return requestCoverImage({
+      persona: context.persona,
+      keyword: context.keyword,
+      selectedDraft: selectedDraftValue,
+      selectedPrompt: prompt,
+      prompt: prompt.prompt,
+      ...requestPayloadConfig("image"),
+    });
+  };
+
   const runTextGeneration = async (kind, payload) => {
     const label = generationLabels[kind];
     const routeLabel = providerLabel("text");
-    const requestGeneration =
-      modelConfig.text.provider === "cloud" ? requestCloudGeneration : requestCodexGeneration;
     setGeneratingKind(kind);
     setCliStatus({
       state: "running",
@@ -362,15 +463,7 @@ export function App() {
     });
 
     try {
-      const result = await requestGeneration({
-        kind,
-        persona,
-        keyword,
-        ragItems,
-        writingBrief,
-        ...requestPayloadConfig("text"),
-        ...payload,
-      });
+      const result = await requestTextItems(kind, payload);
 
       setCliStatus({
         state: "success",
@@ -457,6 +550,19 @@ export function App() {
     } finally {
       setGeneratingKind("");
     }
+  };
+
+  const resetGeneratedState = () => {
+    setSearchResults([]);
+    setSelectedSearchIds([]);
+    setRagItems([]);
+    setTopics([]);
+    setSelectedTopicId(null);
+    setDrafts([]);
+    setSelectedDraftId(null);
+    setPrompts([]);
+    setSelectedPromptId(null);
+    setCoverImage(null);
   };
 
   const toggleSearchResult = (id) => {
@@ -552,8 +658,6 @@ export function App() {
     if (!requireImageModel()) return;
 
     const routeLabel = providerLabel("image");
-    const requestCoverImage =
-      modelConfig.image.provider === "cloud" ? requestCloudCoverImage : requestCodexCoverImage;
     setSelectedPromptId(promptId);
     setGeneratingKind("coverImage");
     setCliStatus({
@@ -567,14 +671,7 @@ export function App() {
     });
 
     try {
-      const result = await requestCoverImage({
-        persona,
-        keyword,
-        selectedDraft,
-        selectedPrompt: prompt,
-        prompt: prompt.prompt,
-        ...requestPayloadConfig("image"),
-      });
+      const result = await requestCoverImageResult(prompt, selectedDraft);
 
       setCoverImage({
         promptId,
@@ -608,6 +705,223 @@ export function App() {
       });
       setCustomError(message);
     } finally {
+      setGeneratingKind("");
+    }
+  };
+
+  const runAutomation = async () => {
+    let currentAutomationStage = "";
+    const moveAutomationStage = (stage) => {
+      currentAutomationStage = stage;
+      setAutomationStage(stage);
+    };
+    const context = {
+      persona: (personaRef.current?.value ?? persona).trim(),
+      keyword: (keywordRef.current?.value ?? keyword).trim(),
+      writingBrief: (writingBriefRef.current?.value ?? writingBrief).trim(),
+      ragItems: [],
+    };
+
+    if (!context.persona || !context.keyword || !context.writingBrief) {
+      setCustomError("自动化生成需要先填写账号人设、创作关键词和补充撰写思路。");
+      return;
+    }
+    if (!requireTextModel() || !requireImageModel()) return;
+
+    setAutomationRunning(true);
+    resetGeneratedState();
+    setNotice({ type: "success", text: "自动化生成已开始：本次点击授权搜索、模型决策入库、生成和封面图生成。" });
+
+    try {
+      moveAutomationStage("搜索热门内容");
+      setGeneratingKind("search");
+      setActiveStep("research");
+      setCliStatus({
+        state: "running",
+        label: "小红书 CLI 搜索",
+        text: `自动化正在通过本机 xhs 搜索「${context.keyword}」...`,
+        commandPreview: `xhs --cookie-source none search "${context.keyword}" --sort popular --type all --page 1 --json`,
+        durationMs: null,
+        generatedAt: "",
+        code: "",
+      });
+      const searchResult = await requestXhsSearch({
+        keyword: context.keyword,
+        sort: "popular",
+        type: "all",
+        page: 1,
+      });
+      const nextSearchResults = searchResult.items;
+      if (nextSearchResults.length === 0) {
+        throw Object.assign(new Error("xhs 没有返回可用于自动化生成的热门内容。"), {
+          code: "XHS_EMPTY",
+        });
+      }
+      setSearchResults(nextSearchResults);
+      setCliStatus({
+        state: "success",
+        label: "小红书 CLI 搜索",
+        text: `xhs 已返回 ${nextSearchResults.length} 条热门内容，自动化将交给文案模型筛选参考。`,
+        commandPreview: searchResult.commandPreview,
+        durationMs: searchResult.durationMs,
+        generatedAt: searchResult.generatedAt,
+        code: "",
+      });
+
+      moveAutomationStage("选择并加入 RAG");
+      const ragDecision = await requestDecision("rag", nextSearchResults, context);
+      const nextSelectedSearchIds = ragDecision.selectedIds;
+      const nextRagItems = nextSearchResults.filter((item) => nextSelectedSearchIds.includes(item.id));
+      setSelectedSearchIds(nextSelectedSearchIds);
+      setRagItems(nextRagItems);
+      setActiveStep("rag");
+      context.ragItems = nextRagItems;
+
+      moveAutomationStage("生成 10 个选题");
+      setGeneratingKind("topics");
+      setCliStatus({
+        state: "running",
+        label: providerLabel("text"),
+        text: `自动化正在通过${providerLabel("text")}生成选题...`,
+        commandPreview: providerPreview("text"),
+        durationMs: null,
+        generatedAt: "",
+        code: "",
+      });
+      const topicResult = await requestTextItems("topics", {}, context);
+      const nextTopics = topicResult.items;
+      setTopics(nextTopics);
+      setActiveStep("topics");
+      setCliStatus({
+        state: "success",
+        label: topicResult.routeLabel,
+        text: `${topicResult.routeLabel}已生成 ${nextTopics.length} 条选题，自动化将选择 1 条继续。`,
+        commandPreview: topicResult.commandPreview,
+        durationMs: topicResult.durationMs,
+        generatedAt: topicResult.generatedAt,
+        code: "",
+      });
+
+      moveAutomationStage("选择选题");
+      const topicDecision = await requestDecision("topic", nextTopics, context);
+      const nextSelectedTopic = nextTopics.find((topic) => topic.id === topicDecision.selectedIds[0]);
+      setSelectedTopicId(nextSelectedTopic.id);
+
+      moveAutomationStage("生成 5 篇文案");
+      setGeneratingKind("drafts");
+      setCliStatus({
+        state: "running",
+        label: providerLabel("text"),
+        text: `自动化正在通过${providerLabel("text")}生成文案...`,
+        commandPreview: providerPreview("text"),
+        durationMs: null,
+        generatedAt: "",
+        code: "",
+      });
+      const draftResult = await requestTextItems("drafts", { selectedTopic: nextSelectedTopic }, context);
+      const nextDrafts = draftResult.items;
+      setDrafts(nextDrafts);
+      setActiveStep("drafts");
+      setCliStatus({
+        state: "success",
+        label: draftResult.routeLabel,
+        text: `${draftResult.routeLabel}已生成 ${nextDrafts.length} 篇文案，自动化将选择 1 篇继续。`,
+        commandPreview: draftResult.commandPreview,
+        durationMs: draftResult.durationMs,
+        generatedAt: draftResult.generatedAt,
+        code: "",
+      });
+
+      moveAutomationStage("选择文案");
+      const draftDecision = await requestDecision("draft", nextDrafts, context, {
+        selectedTopic: nextSelectedTopic,
+      });
+      const nextSelectedDraft = nextDrafts.find((draft) => draft.id === draftDecision.selectedIds[0]);
+      setSelectedDraftId(nextSelectedDraft.id);
+
+      moveAutomationStage("生成 5 份封面 Prompt");
+      setGeneratingKind("coverPrompts");
+      setCliStatus({
+        state: "running",
+        label: providerLabel("text"),
+        text: `自动化正在通过${providerLabel("text")}生成封面 Prompt...`,
+        commandPreview: providerPreview("text"),
+        durationMs: null,
+        generatedAt: "",
+        code: "",
+      });
+      const promptResult = await requestTextItems(
+        "coverPrompts",
+        { selectedTopic: nextSelectedTopic, selectedDraft: nextSelectedDraft },
+        context,
+      );
+      const nextPrompts = promptResult.items;
+      setPrompts(nextPrompts);
+      setActiveStep("cover");
+      setCliStatus({
+        state: "success",
+        label: promptResult.routeLabel,
+        text: `${promptResult.routeLabel}已生成 ${nextPrompts.length} 份封面 Prompt，自动化将选择 1 份生成封面图。`,
+        commandPreview: promptResult.commandPreview,
+        durationMs: promptResult.durationMs,
+        generatedAt: promptResult.generatedAt,
+        code: "",
+      });
+
+      moveAutomationStage("选择封面 Prompt");
+      const promptDecision = await requestDecision("coverPrompt", nextPrompts, context, {
+        selectedTopic: nextSelectedTopic,
+        selectedDraft: nextSelectedDraft,
+      });
+      const nextSelectedPrompt = nextPrompts.find((prompt) => prompt.id === promptDecision.selectedIds[0]);
+      setSelectedPromptId(nextSelectedPrompt.id);
+
+      moveAutomationStage("生成封面图");
+      setGeneratingKind("coverImage");
+      const imageRouteLabel = providerLabel("image");
+      setCliStatus({
+        state: "running",
+        label: imageRouteLabel,
+        text: `自动化正在通过${imageRouteLabel}生成封面图...`,
+        commandPreview: providerPreview("image"),
+        durationMs: null,
+        generatedAt: "",
+        code: "",
+      });
+      const coverResult = await requestCoverImageResult(nextSelectedPrompt, nextSelectedDraft, context);
+      setCoverImage({
+        promptId: nextSelectedPrompt.id,
+        src: coverResult.image.src,
+        alt: coverResult.image.alt,
+        title: coverResult.image.title,
+        createdAt: nowText(),
+        generatedAt: coverResult.generatedAt,
+      });
+      setCliStatus({
+        state: "success",
+        label: imageRouteLabel,
+        text: `${imageRouteLabel}已生成封面图。`,
+        commandPreview: coverResult.commandPreview,
+        durationMs: coverResult.durationMs,
+        generatedAt: coverResult.generatedAt,
+        code: "",
+      });
+      setSuccess("自动化生成已完成：热门参考、RAG、选题、文案、封面 Prompt 和封面图均已生成并保留可见选择。");
+    } catch (error) {
+      const message = error?.message || "自动化生成失败。";
+      setCliStatus({
+        state: "error",
+        label: currentAutomationStage ? `自动化：${currentAutomationStage}` : "自动化生成",
+        text: message,
+        commandPreview: "",
+        durationMs: null,
+        generatedAt: "",
+        code: error?.code || "AUTOMATION_FAILED",
+      });
+      setCustomError(`自动化生成中断：${message}`);
+    } finally {
+      setAutomationRunning(false);
+      setAutomationStage("");
       setGeneratingKind("");
     }
   };
@@ -692,7 +1006,7 @@ export function App() {
           <div className="overview-copy">
             <StageBadge tone="mint">新版流程</StageBadge>
             <h2>从关键词到可发布草稿</h2>
-            <p>人设、热门参考、选题、文案、封面 Prompt 和封面图都在同一条手动确认链路里推进。</p>
+            <p>人设、热门参考、选题、文案、封面 Prompt 和封面图支持手动逐步推进，也可以一次点击自动化生成。</p>
             <div className="metric-grid">
               <div className="metric">
                 <span>搜索结果</span>
@@ -726,20 +1040,31 @@ export function App() {
             title="账号人设与创作关键词"
             meta="人设最多 1000 字，关键词用于搜索和生成"
             action={
-              <button
-                className="primary-button"
-                disabled={Boolean(generatingKind)}
-                type="button"
-                onClick={runSearch}
-              >
-                {generatingKind === "search" ? "搜索中..." : "搜索热门内容"}
-              </button>
+              <div className="section-actions">
+                <button
+                  className="soft-button automation-button"
+                  disabled={isBusy}
+                  type="button"
+                  onClick={runAutomation}
+                >
+                  {automationRunning ? "自动化中..." : "自动化生成"}
+                </button>
+                <button
+                  className="primary-button"
+                  disabled={isBusy}
+                  type="button"
+                  onClick={runSearch}
+                >
+                  {generatingKind === "search" ? "搜索中..." : "搜索热门内容"}
+                </button>
+              </div>
             }
           />
           <div className="input-grid">
             <label className="field persona-field">
               <span>账号人设</span>
               <textarea
+                ref={personaRef}
                 maxLength={1000}
                 value={persona}
                 onChange={(event) => setPersona(event.target.value)}
@@ -748,7 +1073,7 @@ export function App() {
             </label>
             <label className="field keyword-field">
               <span>创作关键词</span>
-              <input value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+              <input ref={keywordRef} value={keyword} onChange={(event) => setKeyword(event.target.value)} />
               <small>自动缓存</small>
             </label>
           </div>
@@ -764,7 +1089,7 @@ export function App() {
               action={
                 <button
                   className="soft-button yellow"
-                  disabled={Boolean(generatingKind)}
+                  disabled={isBusy}
                   type="button"
                   onClick={runSearch}
                 >
@@ -812,7 +1137,7 @@ export function App() {
               tone="mint"
               title="本地 RAG 知识库"
               meta="只保存用户勾选并确认的参考内容"
-              action={<button className="soft-button mint" type="button" onClick={addToRag}>加入 RAG</button>}
+              action={<button className="soft-button mint" disabled={isBusy} type="button" onClick={addToRag}>加入 RAG</button>}
             />
             <div className="rag-stack">
               {ragItems.length === 0 ? (
@@ -842,7 +1167,7 @@ export function App() {
             action={
               <button
                 className="primary-button"
-                disabled={Boolean(generatingKind)}
+                disabled={isBusy}
                 type="button"
                 onClick={generateTopics}
               >
@@ -885,7 +1210,7 @@ export function App() {
               action={
                 <button
                   className="primary-button"
-                  disabled={Boolean(generatingKind)}
+                  disabled={isBusy}
                   type="button"
                   onClick={generateDrafts}
                 >
@@ -895,7 +1220,11 @@ export function App() {
             />
             <label className="field brief-field">
               <span>补充撰写思路</span>
-              <textarea value={writingBrief} onChange={(event) => setWritingBrief(event.target.value)} />
+              <textarea
+                ref={writingBriefRef}
+                value={writingBrief}
+                onChange={(event) => setWritingBrief(event.target.value)}
+              />
             </label>
             <div className="draft-list">
               {drafts.length === 0 ? (
@@ -957,7 +1286,7 @@ export function App() {
               action={
                 <button
                   className="primary-button"
-                  disabled={Boolean(generatingKind)}
+                  disabled={isBusy}
                   type="button"
                   onClick={generatePrompts}
                 >
@@ -976,7 +1305,7 @@ export function App() {
                   <button
                     key={prompt.id}
                     className={selectedPromptId === prompt.id ? "prompt-card selected" : "prompt-card"}
-                    disabled={Boolean(generatingKind)}
+                    disabled={isBusy}
                     onClick={() => generateCoverImage(prompt.id)}
                     type="button"
                   >
@@ -1015,7 +1344,7 @@ export function App() {
               <p>{selectedPrompt?.prompt ?? "尚未选择封面 Prompt。"}</p>
               <button
                 className="soft-button mint"
-                disabled={Boolean(generatingKind)}
+                disabled={isBusy}
                 type="button"
                 onClick={() => generateCoverImage()}
               >
@@ -1063,7 +1392,7 @@ export function App() {
             <span>入库</span>
             <span>生成</span>
             <span>封面</span>
-            <strong>均需点击确认</strong>
+            <strong>{automationRunning ? `自动化：${automationStage}` : "手动逐步或自动化一次确认"}</strong>
           </div>
           <div className={`cli-status ${cliStatus.state}`}>
             <span>{cliStatus.label}</span>
