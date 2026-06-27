@@ -1287,6 +1287,8 @@ button {
 }
 
 .config-rail .clay-panel {
+  min-width: 0;
+  max-width: 100%;
   padding: 15px;
   overflow: visible;
 }
@@ -1388,6 +1390,12 @@ button {
   justify-content: space-between;
 }
 
+.notice-card {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
 .notice-card > p {
   margin-top: 12px;
   padding: 13px;
@@ -1397,6 +1405,7 @@ button {
   font-size: 12px;
   font-weight: 800;
   line-height: 1.48;
+  overflow-wrap: anywhere;
   box-shadow: inset 0 2px 7px rgba(255, 255, 255, 0.86);
 }
 
@@ -1411,6 +1420,8 @@ button {
 }
 
 .cli-status {
+  min-width: 0;
+  max-width: 100%;
   margin-top: 12px;
   padding: 12px;
   border-radius: 20px;
@@ -1448,18 +1459,21 @@ button {
   font-size: 12px;
   font-weight: 800;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .cli-status code {
   max-width: 100%;
   margin-top: 8px;
   overflow: hidden;
+  overflow-wrap: anywhere;
   color: #62527f;
   font-size: 10px;
   font-weight: 800;
   line-height: 1.45;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-overflow: clip;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .cli-status small {
@@ -1467,6 +1481,7 @@ button {
   color: #887b9a;
   font-size: 10px;
   font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
 .manual-boundary {
