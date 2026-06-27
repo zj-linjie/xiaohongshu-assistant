@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { requestCodexCoverImage, requestCodexGeneration } from "./codexClient.js";
+import {
+  requestCloudCoverImage,
+  requestCloudGeneration,
+  requestCodexCoverImage,
+  requestCodexGeneration,
+} from "./codexClient.js";
 
 const STORAGE_PREFIX = "mint-atelier-v2";
 
@@ -89,7 +94,6 @@ const errorMessages = {
   prompts: "封面 Prompt 生成失败：请先选择一篇文案。",
   image: "封面图生成失败：已保留原始 Prompt，可以检查图片模型配置后重新生成。",
   config: "模型配置缺失：云端 API 需要填写 API Key、API Base URL 和模型名称。",
-  cloud: "云端 API 暂未接入：本轮请切换到本地 CLI 生成。",
   key: "API Key 无效：请检查密钥是否完整，或切换到本地 CLI 运行方式。",
   cli: "本地 CLI 不可用：请确认 Codex CLI 已安装并可在终端运行。",
   network: "网络请求失败：请检查代理、API Base URL 或稍后重试。",
@@ -124,6 +128,10 @@ function nowText() {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date());
+}
+
+function isCloudPlaceholderModel(value) {
+  return /codex\s*cli|imagegen\s*skill|本地\s*cli/i.test(String(value ?? ""));
 }
 
 function SoftIcon({ children, tone = "mint" }) {
@@ -171,8 +179,12 @@ function ProviderSwitch({ value, onChange }) {
 
 function ModelConfig({ title, tone, icon, value, onChange }) {
   const update = (field, nextValue) => onChange({ ...value, [field]: nextValue });
-  const localDescription =
-    title === "图片生成" ? "本地 imagegen skill，模型由 Codex worker 决定" : "本地 CLI 路线";
+  const localDescription = title === "图片生成"
+    ? "本地 imagegen skill，模型由 Codex worker 决定"
+    : "本地 CLI 路线";
+  const cloudDescription = title === "图片生成"
+    ? "云端 Images API 路线"
+    : "云端 Chat Completions 路线";
 
   return (
     <article className="model-config-block">
@@ -180,7 +192,7 @@ function ModelConfig({ title, tone, icon, value, onChange }) {
         <SoftIcon tone={tone}>{icon}</SoftIcon>
         <div>
           <h3>{title}</h3>
-          <p>{value.provider === "local" ? localDescription : "云端 API 路线"}</p>
+          <p>{value.provider === "local" ? localDescription : cloudDescription}</p>
         </div>
       </header>
       <ProviderSwitch value={value.provider} onChange={(provider) => update("provider", provider)} />
@@ -202,7 +214,7 @@ function ModelConfig({ title, tone, icon, value, onChange }) {
         <input
           value={value.baseUrl}
           onChange={(event) => update("baseUrl", event.target.value)}
-          placeholder={value.provider === "local" ? "本地 CLI 可留空" : "https://api.example.com"}
+          placeholder={value.provider === "local" ? "本地 CLI 可留空" : "https://api.openai.com/v1"}
         />
       </label>
     </article>
@@ -229,7 +241,8 @@ export function App() {
   const [generatingKind, setGeneratingKind] = useState("");
   const [cliStatus, setCliStatus] = useState({
     state: "idle",
-    text: "尚未调用 Codex CLI。",
+    label: "生成通道",
+    text: "尚未调用生成服务。",
     commandPreview: "",
     durationMs: null,
     generatedAt: "",
@@ -296,76 +309,126 @@ export function App() {
     setModelConfig((current) => ({ ...current, [channel]: value }));
   };
 
-  const requireTextModel = () => {
-    const config = modelConfig.text;
+  const requireModelConfig = (channel) => {
+    const config = modelConfig[channel];
     if (!config.modelName.trim()) {
       setError("config");
       return false;
     }
     if (config.provider === "cloud") {
-      setError("cloud");
-      return false;
+      if (!config.apiKey.trim() || !config.baseUrl.trim() || isCloudPlaceholderModel(config.modelName)) {
+        setError("config");
+        return false;
+      }
+      try {
+        const baseUrl = new URL(config.baseUrl.trim());
+        if (!["http:", "https:"].includes(baseUrl.protocol)) {
+          setCustomError("API Base URL 只支持 http 或 https。");
+          return false;
+        }
+      } catch {
+        setCustomError("API Base URL 不是合法 URL。");
+        return false;
+      }
     }
     return true;
   };
 
-  const requireImageModel = () => {
-    const config = modelConfig.image;
-    if (!config.modelName.trim()) {
-      setError("config");
-      return false;
-    }
+  const requireTextModel = () => requireModelConfig("text");
+
+  const requireImageModel = () => requireModelConfig("image");
+
+  const providerLabel = (channel) => {
+    const config = modelConfig[channel];
     if (config.provider === "cloud") {
-      setError("cloud");
-      return false;
+      return channel === "image" ? "云端图片 API" : "云端文本 API";
     }
-    return true;
+    return channel === "image" ? "本地 Codex CLI imagegen" : "本地 Codex CLI";
   };
 
-  const runCodexGeneration = async (kind, payload) => {
+  const providerPreview = (channel) => {
+    const config = modelConfig[channel];
+    if (config.provider === "local") {
+      return "codex exec ...";
+    }
+    const endpoint = channel === "image" ? "/images/generations" : "/chat/completions";
+    try {
+      const url = new URL(config.baseUrl.trim());
+      const currentPath = url.pathname.replace(/\/+$/, "");
+      if (!currentPath.toLowerCase().endsWith(endpoint.toLowerCase())) {
+        url.pathname = `${currentPath}/${endpoint.replace(/^\/+/, "")}`.replace(/\/{2,}/g, "/");
+      }
+      url.search = "";
+      url.hash = "";
+      return `POST ${url.toString()}`;
+    } catch {
+      return `POST ${endpoint}`;
+    }
+  };
+
+  const requestPayloadConfig = (channel) => {
+    const config = modelConfig[channel];
+    if (config.provider !== "cloud") {
+      return { modelName: config.modelName };
+    }
+
+    return {
+      modelName: config.modelName,
+      apiKey: config.apiKey,
+      baseUrl: config.baseUrl,
+    };
+  };
+
+  const runTextGeneration = async (kind, payload) => {
     const label = generationLabels[kind];
+    const routeLabel = providerLabel("text");
+    const requestGeneration =
+      modelConfig.text.provider === "cloud" ? requestCloudGeneration : requestCodexGeneration;
     setGeneratingKind(kind);
     setCliStatus({
       state: "running",
-      text: `正在通过本地 Codex CLI 生成${label}...`,
-      commandPreview: "codex exec ...",
+      label: routeLabel,
+      text: `正在通过${routeLabel}生成${label}...`,
+      commandPreview: providerPreview("text"),
       durationMs: null,
       generatedAt: "",
       code: "",
     });
 
     try {
-      const result = await requestCodexGeneration({
+      const result = await requestGeneration({
         kind,
         persona,
         keyword,
         ragItems,
         writingBrief,
-        modelName: modelConfig.text.modelName,
+        ...requestPayloadConfig("text"),
         ...payload,
       });
 
       setCliStatus({
         state: "success",
-        text: `Codex CLI 已生成 ${result.items.length} 条${label}。`,
+        label: routeLabel,
+        text: `${routeLabel}已生成 ${result.items.length} 条${label}。`,
         commandPreview: result.commandPreview,
         durationMs: result.durationMs,
         generatedAt: result.generatedAt,
         code: "",
       });
-      return result.items;
+      return { items: result.items, routeLabel };
     } catch (error) {
-      const message = error?.message || "Codex CLI 生成失败。";
+      const message = error?.message || `${routeLabel}生成失败。`;
       setCliStatus({
         state: "error",
+        label: routeLabel,
         text: message,
         commandPreview: "",
         durationMs: null,
         generatedAt: "",
-        code: error?.code || "CODEX_FAILED",
+        code: error?.code || "GENERATION_FAILED",
       });
       setCustomError(message);
-      return null;
+      return false;
     } finally {
       setGeneratingKind("");
     }
@@ -418,8 +481,9 @@ export function App() {
     }
     if (!requireTextModel()) return;
 
-    const nextTopics = await runCodexGeneration("topics", {});
-    if (!nextTopics) return;
+    const result = await runTextGeneration("topics", {});
+    if (!result) return;
+    const nextTopics = result.items;
 
     setTopics(nextTopics);
     setSelectedTopicId(nextTopics[0].id);
@@ -429,7 +493,7 @@ export function App() {
     setSelectedPromptId(null);
     setCoverImage(null);
     setActiveStep("topics");
-    setSuccess("已通过本地 Codex CLI 生成 10 个选题。");
+    setSuccess(`已通过${result.routeLabel}生成 10 个选题。`);
   };
 
   const generateDrafts = async () => {
@@ -439,8 +503,9 @@ export function App() {
     }
     if (!requireTextModel()) return;
 
-    const nextDrafts = await runCodexGeneration("drafts", { selectedTopic });
-    if (!nextDrafts) return;
+    const result = await runTextGeneration("drafts", { selectedTopic });
+    if (!result) return;
+    const nextDrafts = result.items;
 
     setDrafts(nextDrafts);
     setSelectedDraftId(nextDrafts[0].id);
@@ -448,7 +513,7 @@ export function App() {
     setSelectedPromptId(null);
     setCoverImage(null);
     setActiveStep("drafts");
-    setSuccess("已通过本地 Codex CLI 生成 5 篇文案，可选择一篇继续生成封面 Prompt。");
+    setSuccess(`已通过${result.routeLabel}生成 5 篇文案，可选择一篇继续生成封面 Prompt。`);
   };
 
   const generatePrompts = async () => {
@@ -458,17 +523,18 @@ export function App() {
     }
     if (!requireTextModel()) return;
 
-    const nextPrompts = await runCodexGeneration("coverPrompts", {
+    const result = await runTextGeneration("coverPrompts", {
       selectedTopic,
       selectedDraft,
     });
-    if (!nextPrompts) return;
+    if (!result) return;
+    const nextPrompts = result.items;
 
     setPrompts(nextPrompts);
     setSelectedPromptId(nextPrompts[0].id);
     setCoverImage(null);
     setActiveStep("cover");
-    setSuccess("已通过本地 Codex CLI 生成 5 份封面 Prompt，默认不包含真人、脸、手和动物。");
+    setSuccess(`已通过${result.routeLabel}生成 5 份封面 Prompt，默认不包含真人、脸、手和动物。`);
   };
 
   const generateCoverImage = async (promptId = selectedPromptId) => {
@@ -479,25 +545,29 @@ export function App() {
     }
     if (!requireImageModel()) return;
 
+    const routeLabel = providerLabel("image");
+    const requestCoverImage =
+      modelConfig.image.provider === "cloud" ? requestCloudCoverImage : requestCodexCoverImage;
     setSelectedPromptId(promptId);
     setGeneratingKind("coverImage");
     setCliStatus({
       state: "running",
-      text: "正在通过本地 Codex CLI 生成封面图...",
-      commandPreview: "codex exec ...",
+      label: routeLabel,
+      text: `正在通过${routeLabel}生成封面图...`,
+      commandPreview: providerPreview("image"),
       durationMs: null,
       generatedAt: "",
       code: "",
     });
 
     try {
-      const result = await requestCodexCoverImage({
+      const result = await requestCoverImage({
         persona,
         keyword,
         selectedDraft,
         selectedPrompt: prompt,
         prompt: prompt.prompt,
-        modelName: modelConfig.image.modelName,
+        ...requestPayloadConfig("image"),
       });
 
       setCoverImage({
@@ -510,18 +580,20 @@ export function App() {
       });
       setCliStatus({
         state: "success",
-        text: "Codex CLI 已生成封面图。",
+        label: routeLabel,
+        text: `${routeLabel}已生成封面图。`,
         commandPreview: result.commandPreview,
         durationMs: result.durationMs,
         generatedAt: result.generatedAt,
         code: "",
       });
       setActiveStep("cover");
-      setSuccess("已通过本地 Codex CLI 生成封面图，原始 Prompt 已保留。");
+      setSuccess(`已通过${routeLabel}生成封面图，原始 Prompt 已保留。`);
     } catch (error) {
-      const message = error?.message || "Codex CLI 封面图生成失败。";
+      const message = error?.message || `${routeLabel}封面图生成失败。`;
       setCliStatus({
         state: "error",
+        label: routeLabel,
         text: message,
         commandPreview: "",
         durationMs: null,
@@ -903,7 +975,7 @@ export function App() {
               {generatingKind === "coverImage" ? (
                 <div className="cover-placeholder">
                   <SoftIcon tone="mint">成</SoftIcon>
-                  <p>Codex CLI 正在生成封面图...</p>
+                  <p>正在生成封面图...</p>
                 </div>
               ) : coverImage ? (
                 <img src={coverImage.src} alt={coverImage.alt} />
@@ -970,7 +1042,7 @@ export function App() {
             <strong>均需点击确认</strong>
           </div>
           <div className={`cli-status ${cliStatus.state}`}>
-            <span>Codex CLI</span>
+            <span>{cliStatus.label}</span>
             <p>{cliStatus.text}</p>
             {cliStatus.commandPreview ? <code>{cliStatus.commandPreview}</code> : null}
             {cliStatus.durationMs ? (

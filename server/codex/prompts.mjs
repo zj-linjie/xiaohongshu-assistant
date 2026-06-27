@@ -53,6 +53,8 @@ export function buildCodexPrompt(payload) {
       "",
       "Task: Generate exactly 10 Xiaohongshu topic candidates.",
       "Each item must be specific, practical, and grounded in the persona, keyword, and references.",
+      "Use these exact English keys on every item: title, angle, audience, reason, hook.",
+      "Do not translate, rename, omit, or nest these keys.",
       "Return this exact JSON shape:",
       '{"items":[{"title":"string","angle":"string","audience":"string","reason":"string","hook":"string"}]}',
     ].join("\n");

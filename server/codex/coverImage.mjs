@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import crypto from "node:crypto";
-import { copyFile, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -32,7 +32,7 @@ function commandPreview(args) {
   return ["codex", ...safeArgs].join(" ");
 }
 
-function imagePrompt(payload) {
+export function buildCoverImagePrompt(payload) {
   const draft = payload.selectedDraft ?? {};
   const selectedPrompt = payload.selectedPrompt ?? {};
 
@@ -58,7 +58,7 @@ You must use the native \`image_gen.imagegen\` tool. Do not call direct image AP
 Do not create placeholder art with SVG, Python, PIL, canvas, HTML, screenshots, or code-native drawing.
 
 Image prompt:
-${imagePrompt(payload)}
+${buildCoverImagePrompt(payload)}
 
 Save the final PNG exactly here:
 ${imagePath}
@@ -85,6 +85,14 @@ Rules:
 - Do not ask the user questions.`;
 }
 
+function assertPngBytes(bytes, code, message) {
+  if (!Buffer.isBuffer(bytes) || bytes.length <= PNG_SIGNATURE.length || !bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) {
+    throw new CodexApiError(code, message, 502);
+  }
+
+  return bytes.length;
+}
+
 async function assertPngFile(filePath) {
   let bytes;
   try {
@@ -93,11 +101,7 @@ async function assertPngFile(filePath) {
     throw new CodexApiError("IMAGEGEN_BAD_OUTPUT", "imagegen worker 没有写出 PNG 文件。", 502);
   }
 
-  if (bytes.length <= PNG_SIGNATURE.length || !bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) {
-    throw new CodexApiError("IMAGEGEN_BAD_OUTPUT", "imagegen worker 写出的文件不是合法 PNG。", 502);
-  }
-
-  return bytes.length;
+  return assertPngBytes(bytes, "IMAGEGEN_BAD_OUTPUT", "imagegen worker 写出的文件不是合法 PNG。");
 }
 
 async function readWorkerResult(resultPath, imagePath) {
@@ -125,19 +129,34 @@ async function readWorkerResult(resultPath, imagePath) {
   return payload;
 }
 
-async function publishGeneratedPng({ imagePath, selectedPrompt }) {
+export async function publishGeneratedPng({
+  imagePath,
+  imageBytes,
+  selectedPrompt,
+  sourceLabel = "Codex CLI imagegen",
+  badImageCode = "IMAGEGEN_BAD_OUTPUT",
+  badImageMessage = "生成服务返回的文件不是合法 PNG。",
+}) {
   await mkdir(generatedDir, { recursive: true });
   const fileName = `cover-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.png`;
   const filePath = path.join(generatedDir, fileName);
-  const byteLength = await assertPngFile(imagePath);
-  await copyFile(imagePath, filePath);
+  let byteLength;
 
-  const title = compactText(selectedPrompt?.title, 80) || "Codex CLI imagegen 封面图";
+  if (imageBytes) {
+    const bytes = Buffer.from(imageBytes);
+    byteLength = assertPngBytes(bytes, badImageCode, badImageMessage);
+    await writeFile(filePath, bytes);
+  } else {
+    byteLength = await assertPngFile(imagePath);
+    await copyFile(imagePath, filePath);
+  }
+
+  const title = compactText(selectedPrompt?.title, 80) || `${sourceLabel} 封面图`;
 
   return {
     src: `${GENERATED_ROUTE_PREFIX}${fileName}`,
     title,
-    alt: `${title}，本地 Codex CLI imagegen 生成的封面图`,
+    alt: `${title}，${sourceLabel} 生成的封面图`,
     fileName,
     mimeType: "image/png",
     byteLength,

@@ -3,6 +3,10 @@ import {
   serveGeneratedCover,
   validateCoverImageRequest,
 } from "./coverImage.mjs";
+import {
+  runCloudCoverImage,
+  runCloudGeneration,
+} from "./cloudProvider.mjs";
 import { buildCodexPrompt } from "./prompts.mjs";
 import { runCodex } from "./runCodex.mjs";
 import {
@@ -67,11 +71,16 @@ export function codexGenerateMiddleware() {
       return;
     }
 
-    if (requestUrl.pathname !== "/api/codex/generate") {
-      if (requestUrl.pathname !== "/api/codex/cover-image") {
-        next();
-        return;
-      }
+    const handledPath = new Set([
+      "/api/codex/generate",
+      "/api/codex/cover-image",
+      "/api/cloud/generate",
+      "/api/cloud/cover-image",
+    ]);
+
+    if (!handledPath.has(requestUrl.pathname)) {
+      next();
+      return;
     }
 
     if (req.method !== "POST") {
@@ -102,7 +111,38 @@ export function codexGenerateMiddleware() {
         return;
       }
 
+      if (requestUrl.pathname === "/api/cloud/cover-image") {
+        validateCoverImageRequest(payload);
+        const cloudResult = await runCloudCoverImage(payload);
+
+        sendJson(res, 200, {
+          ok: true,
+          kind: "coverImage",
+          image: cloudResult.image,
+          raw: cloudResult.raw,
+          commandPreview: cloudResult.commandPreview,
+          durationMs: cloudResult.durationMs,
+          generatedAt: new Date().toISOString(),
+        });
+        return;
+      }
+
       validateRequest(payload);
+
+      if (requestUrl.pathname === "/api/cloud/generate") {
+        const cloudResult = await runCloudGeneration(payload);
+
+        sendJson(res, 200, {
+          ok: true,
+          kind: payload.kind,
+          items: cloudResult.items,
+          raw: cloudResult.raw,
+          commandPreview: cloudResult.commandPreview,
+          durationMs: cloudResult.durationMs,
+          generatedAt: new Date().toISOString(),
+        });
+        return;
+      }
 
       const prompt = buildCodexPrompt(payload);
       const codexResult = await runCodex({

@@ -47,14 +47,44 @@ function assertString(value, fieldName) {
   return value.trim();
 }
 
+function pickString(item, fieldNames) {
+  for (const fieldName of fieldNames) {
+    const value = item?.[fieldName];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return "";
+}
+
+function assertStringField(item, fieldNames, fieldName) {
+  const value = pickString(item, fieldNames);
+  if (!value) {
+    throw new CodexApiError("CODEX_BAD_JSON", `Codex 返回缺少字段：${fieldName}。`, 502);
+  }
+  return value;
+}
+
 function normalizeTopic(item, index) {
+  const title = assertStringField(item, ["title", "标题", "选题标题"], "title");
+  const angle = assertStringField(item, ["angle", "选题角度", "角度", "内容角度", "contentAngle"], "angle");
+  const audience = assertStringField(
+    item,
+    ["audience", "目标受众", "受众", "适合人群", "targetAudience"],
+    "audience",
+  );
+  const hook = assertStringField(item, ["hook", "内容爆点", "爆点", "钩子", "开头钩子", "sellingPoint"], "hook");
+  const reason =
+    pickString(item, ["reason", "推荐理由", "理由", "rationale", "why", "recommendationReason"]) ||
+    `基于「${angle}」展开，适合${audience}，爆点是「${hook}」。`;
+
   return {
     id: `topic-${index + 1}`,
-    title: assertString(item.title, "title"),
-    angle: assertString(item.angle, "angle"),
-    audience: assertString(item.audience, "audience"),
-    reason: assertString(item.reason, "reason"),
-    hook: assertString(item.hook, "hook"),
+    title,
+    angle,
+    audience,
+    reason,
+    hook,
   };
 }
 
