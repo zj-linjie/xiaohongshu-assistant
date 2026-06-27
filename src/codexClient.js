@@ -75,3 +75,15 @@ export async function requestCloudCoverImage(payload) {
     "API_BAD_JSON",
   );
 }
+
+export async function requestXhsSearch(payload) {
+  return requestJson(
+    "/api/xhs/search",
+    payload,
+    {
+      nonJson: "小红书搜索服务返回了非 JSON 内容。",
+      failed: "小红书热门内容搜索失败。",
+    },
+    "XHS_BAD_JSON",
+  );
+}

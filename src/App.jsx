@@ -4,6 +4,7 @@ import {
   requestCloudGeneration,
   requestCodexCoverImage,
   requestCodexGeneration,
+  requestXhsSearch,
 } from "./codexClient.js";
 
 const STORAGE_PREFIX = "mint-atelier-v2";
@@ -51,43 +52,8 @@ const sidebarProjects = [
   { title: "轻便出行搭配", meta: "封面待生成" },
 ];
 
-const seedSearchResults = [
-  {
-    id: "note-1842",
-    title: "35 度也能穿出清爽感的通勤公式",
-    excerpt: "薄针织、棉麻半裙和低饱和配色组合起来，比全套短袖更显得利落，也适合空调房。",
-    tags: ["通勤穿搭", "夏日搭配", "轻熟风"],
-    metrics: "赞 1.8w | 藏 9200 | 评 368",
-    source: "note_1842_clean_workwear",
-  },
-  {
-    id: "note-2197",
-    title: "小个子夏天上班别乱买，先看这 4 个单品",
-    excerpt: "上短下长、鞋包同色、轻薄外搭和小面积亮色最容易复制，照片里也更有层次。",
-    tags: ["小个子穿搭", "上班穿搭", "显高公式"],
-    metrics: "赞 9860 | 藏 7400 | 评 211",
-    source: "note_2197_petite_office",
-  },
-  {
-    id: "note-3076",
-    title: "不想穿得太正式，夏季通勤这样松弛一点",
-    excerpt: "把西装裤换成垂感阔腿裤，衬衫选择柔软面料，再用浅色包做呼应，日常感会更强。",
-    tags: ["松弛感", "职场穿搭", "夏日灵感"],
-    metrics: "赞 6420 | 藏 5100 | 评 142",
-    source: "note_3076_soft_office",
-  },
-  {
-    id: "note-4129",
-    title: "清爽穿搭的关键不是少穿，而是颜色干净",
-    excerpt: "薄荷绿、奶油白和浅蓝能减少视觉闷感，适合拍封面时做同色系静物搭配。",
-    tags: ["配色公式", "穿搭笔记", "封面灵感"],
-    metrics: "赞 2.1w | 藏 1.1w | 评 486",
-    source: "note_4129_color_formula",
-  },
-];
-
 const errorMessages = {
-  search: "搜索失败：请确认关键词不为空，并检查 xiaohongshu-cli 或网络状态后重试。",
+  search: "搜索失败：请确认关键词不为空，并检查 xhs CLI 登录状态或网络状态后重试。",
   rag: "RAG 加入失败：请先勾选至少一条搜索结果，再点击加入本地知识库。",
   topics: "选题生成失败：请补充人设、关键词，并至少加入一条参考内容。",
   drafts: "文案生成失败：请先选择一个选题，并补充必要的撰写思路。",
@@ -434,23 +400,63 @@ export function App() {
     }
   };
 
-  const runSearch = () => {
+  const runSearch = async () => {
     if (!keyword.trim()) {
       setError("search");
       return;
     }
 
-    const lookupTime = nowText();
-    setSearchResults(
-      seedSearchResults.map((result) => ({
-        ...result,
-        keyword: keyword.trim(),
-        lookupTime,
-      })),
-    );
-    setSelectedSearchIds([]);
-    setActiveStep("research");
-    setSuccess(`已手动搜索「${keyword.trim()}」，结果尚未自动入库。`);
+    const trimmedKeyword = keyword.trim();
+    setGeneratingKind("search");
+    setCliStatus({
+      state: "running",
+      label: "小红书 CLI 搜索",
+      text: `正在通过本机 xhs 搜索「${trimmedKeyword}」...`,
+      commandPreview: `xhs --cookie-source none search "${trimmedKeyword}" --sort popular --type all --page 1 --json`,
+      durationMs: null,
+      generatedAt: "",
+      code: "",
+    });
+
+    try {
+      const result = await requestXhsSearch({
+        keyword: trimmedKeyword,
+        sort: "popular",
+        type: "all",
+        page: 1,
+      });
+
+      setSearchResults(result.items);
+      setSelectedSearchIds([]);
+      setActiveStep("research");
+      setCliStatus({
+        state: "success",
+        label: "小红书 CLI 搜索",
+        text: `xhs 已返回 ${result.items.length} 条热门内容，结果尚未自动入库。`,
+        commandPreview: result.commandPreview,
+        durationMs: result.durationMs,
+        generatedAt: result.generatedAt,
+        code: "",
+      });
+      setSuccess(`已通过本机 xhs 搜索「${trimmedKeyword}」，结果尚未自动入库。`);
+    } catch (error) {
+      const message = error?.message || "小红书热门内容搜索失败。";
+      setSearchResults([]);
+      setSelectedSearchIds([]);
+      setActiveStep("research");
+      setCliStatus({
+        state: "error",
+        label: "小红书 CLI 搜索",
+        text: message,
+        commandPreview: "",
+        durationMs: null,
+        generatedAt: "",
+        code: error?.code || "XHS_FAILED",
+      });
+      setCustomError(message);
+    } finally {
+      setGeneratingKind("");
+    }
   };
 
   const toggleSearchResult = (id) => {
@@ -719,7 +725,16 @@ export function App() {
             tone="mint"
             title="账号人设与创作关键词"
             meta="人设最多 1000 字，关键词用于搜索和生成"
-            action={<button className="primary-button" type="button" onClick={runSearch}>搜索热门内容</button>}
+            action={
+              <button
+                className="primary-button"
+                disabled={Boolean(generatingKind)}
+                type="button"
+                onClick={runSearch}
+              >
+                {generatingKind === "search" ? "搜索中..." : "搜索热门内容"}
+              </button>
+            }
           />
           <div className="input-grid">
             <label className="field persona-field">
@@ -746,7 +761,16 @@ export function App() {
               tone="yellow"
               title="热门内容搜索"
               meta="搜索只在点击后执行，结果不会自动入库"
-              action={<button className="soft-button yellow" type="button" onClick={runSearch}>重新搜索</button>}
+              action={
+                <button
+                  className="soft-button yellow"
+                  disabled={Boolean(generatingKind)}
+                  type="button"
+                  onClick={runSearch}
+                >
+                  {generatingKind === "search" ? "搜索中..." : "重新搜索"}
+                </button>
+              }
             />
             <div className="result-list">
               {searchResults.length === 0 ? (

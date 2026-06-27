@@ -2,7 +2,7 @@
 
 `薄荷工坊 / Mint Atelier` 是一个 React + Vite 桌面端 Web App，用于辅助生成小红书内容草稿。当前设计稿以阶段式工作台表达完整流程：人设和关键词输入、热门内容搜索、手动加入本地 RAG、生成选题、生成文案、生成封面 Prompt、生成封面图。
 
-项目保持 3 列内容创作工作台形态，并保留 Pastel 3D Claymorphism 视觉方向。当前生成链路支持两条真实路线：本地 Codex CLI，以及云端 OpenAI-compatible API；热门搜索和 RAG 来源仍使用本地 mock 数据表达流程。
+项目保持 3 列内容创作工作台形态，并保留 Pastel 3D Claymorphism 视觉方向。当前链路支持本机 `xhs` CLI 热门搜索、本地 Codex CLI 生成，以及云端 OpenAI-compatible API 生成；RAG 入库仍需要用户手动勾选确认。
 
 ## 本地运行
 
@@ -23,6 +23,14 @@ npm run build
 ```bash
 CODEX_CLI_PATH=/path/to/codex npm run dev -- --port 5173
 ```
+
+小红书热门搜索通过本机 `xhs` CLI 触发，默认命令是 `/Users/ice/.local/bin/xhs`，默认只使用 CLI 已保存登录态：
+
+```bash
+XHS_CLI_COMMAND=/path/to/xhs XHS_COOKIE_SOURCE=none npm run dev -- --port 5173
+```
+
+如果搜索提示未登录，请先在终端手动运行 `xhs login`，再回到页面点击搜索。前端不会读取、展示或保存 Cookie。
 
 云端 API 路线在右侧模型配置中填写：模型名称、API Key、API Base URL。文案生成走 `POST /chat/completions`，图片生成走 `POST /images/generations`，服务端会把图片结果统一校验并发布为 `/generated/covers/*.png`。
 

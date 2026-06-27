@@ -15,6 +15,10 @@ import {
   parseJsonFromCodex,
   validateRequest,
 } from "./validation.mjs";
+import {
+  runXhsSearch,
+  validateXhsSearchRequest,
+} from "../xhs/runXhs.mjs";
 
 const MAX_BODY_BYTES = 128 * 1024;
 
@@ -76,6 +80,7 @@ export function codexGenerateMiddleware() {
       "/api/codex/cover-image",
       "/api/cloud/generate",
       "/api/cloud/cover-image",
+      "/api/xhs/search",
     ]);
 
     if (!handledPath.has(requestUrl.pathname)) {
@@ -94,6 +99,22 @@ export function codexGenerateMiddleware() {
 
     try {
       const payload = await readJsonBody(req);
+
+      if (requestUrl.pathname === "/api/xhs/search") {
+        const searchPayload = validateXhsSearchRequest(payload);
+        const searchResult = await runXhsSearch(searchPayload);
+
+        sendJson(res, 200, {
+          ok: true,
+          kind: "xhsSearch",
+          items: searchResult.items,
+          hasMore: searchResult.hasMore,
+          commandPreview: searchResult.commandPreview,
+          durationMs: searchResult.durationMs,
+          generatedAt: new Date().toISOString(),
+        });
+        return;
+      }
 
       if (requestUrl.pathname === "/api/codex/cover-image") {
         validateCoverImageRequest(payload);

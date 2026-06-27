@@ -13,11 +13,11 @@
 - AI 按阶段生成 10 个选题、5 篇文案、5 份封面 Prompt 和封面图。
 - 文案正文包含小红书话题标签，格式为 `#话题名称[话题]#`。
 - 文案生成模型和图片生成模型支持单独配置，并自动缓存。
-- 当前版本支持两条真实生成路线：本地 Codex CLI，以及云端 OpenAI-compatible API。热门搜索和 RAG 来源仍使用本地 mock 数据表达流程。
+- 当前版本支持三条真实本地/云端链路：本机 `xhs` CLI 热门搜索、本地 Codex CLI 生成、云端 OpenAI-compatible API 生成。RAG 入库仍必须由用户勾选确认。
 
 ## 风控边界
 
-- `xiaohongshu-cli` 调用必须由用户主动触发，不做后台自动搜索、自动刷新或高频轮询。
+- `xiaohongshu-cli` / `xhs` 调用必须由用户主动触发，不做后台自动搜索、自动刷新或高频轮询。
 - 搜索、采集、入库、生成、封面图生成之间要有清晰的用户确认边界。
 - 本地 CLI 和云端 API 调用都必须由用户点击生成按钮触发，不做后台自动生成；服务端只通过本地 Node middleware 执行 CLI 或转发 API 请求，不在浏览器中执行命令。
 - 当前核心范围不包含自动发布、自动点赞、自动评论、自动收藏、自动关注、自动私信或自动批量采集。
@@ -30,6 +30,7 @@
 - 应用入口：`src/App.jsx`
 - 全局样式和视觉 token：`src/styles.css`
 - 本地生成 API：`server/codex/`
+- 小红书搜索 CLI adapter：`server/xhs/`
 - 临时封面图托管：`/generated/covers/*.png`
 - 资源文件：`public/assets/`
 

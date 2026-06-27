@@ -6,7 +6,7 @@
 
 产品核心目标是让用户通过简单流程完成从「关键词」到「可发布内容草稿」的创作过程。本产品只做内容创作辅助，不做自动发布、自动点赞、自动评论、自动收藏、自动关注等平台操作。
 
-当前版本的选题、文案、封面 Prompt 和 PNG 封面图支持本地 Codex CLI 与云端 OpenAI-compatible API 两条真实生成路线；热门内容搜索和 RAG 来源数据仍是本地 mock 流程。
+当前版本的热门内容搜索通过本机 `xhs` CLI 执行，选题、文案、封面 Prompt 和 PNG 封面图支持本地 Codex CLI 与云端 OpenAI-compatible API 两条真实生成路线。搜索结果不会自动进入 RAG，RAG 入库仍需要用户手动勾选确认。
 
 ## 2. 核心流程
 
@@ -35,7 +35,9 @@
 
 ### 3.3 热门内容搜索
 
-用户可以点击搜索按钮，获取与关键词相关的小红书热门内容。搜索必须由用户手动触发，失败时需要显示明确、可理解的错误提示。
+用户可以点击搜索按钮，通过本机 `xhs` CLI 获取与关键词相关的小红书热门内容。默认命令为 `/Users/ice/.local/bin/xhs --cookie-source none search "<关键词>" --sort popular --type all --page 1 --json`，可通过 `XHS_CLI_COMMAND` 和 `XHS_COOKIE_SOURCE` 覆盖。搜索必须由用户手动触发，失败时需要显示明确、可理解的错误提示。
+
+服务端只消费 `xhs` 的结构化 JSON 输出，并返回归一化后的搜索项；不得把原始 CLI 输出、Cookie 或 `xsec_token` 返回给浏览器。
 
 搜索结果需要展示：
 
@@ -114,6 +116,7 @@
 - 模型配置缺失
 - API Key 无效
 - 本地 CLI 不可用
+- xhs CLI 未安装、未登录、需要验证、频率或网络受限、返回非 JSON 内容
 - Codex CLI 执行失败、超时、返回非 JSON 内容、imagegen 失败或写出非 PNG 内容
 - 云端 API 配置缺失、Base URL 无效、HTTP 错误、超时、返回非 JSON、返回结构不支持或返回非 PNG 图片
 - 网络请求失败
