@@ -6,10 +6,35 @@
 
 ## 本地运行
 
-安装依赖后启动开发服务器：
+最省心的启动方式：
+
+- macOS：双击 `启动薄荷工坊.command`
+- Windows：双击 `启动薄荷工坊.bat`
+
+脚本会使用固定地址 `http://127.0.0.1:52880`，缺少 `node_modules` 时会先执行 `npm install`，然后等待本地服务启动并自动打开浏览器。模型配置写入浏览器 `localStorage`，固定地址可以避免端口变化导致缓存读不到。
+
+命令行启动同一个固定地址：
 
 ```bash
-npm run dev -- --port 5173
+npm run launch:fixed
+```
+
+开发时如果不想每次启动前构建，可以使用：
+
+```bash
+npm run launch:dev
+```
+
+本地构建后预览：
+
+```bash
+npm run deploy:local
+```
+
+临时启动开发服务器：
+
+```bash
+npm run dev
 ```
 
 构建检查：
@@ -21,13 +46,13 @@ npm run build
 本地 Codex CLI 默认使用 `/opt/homebrew/bin/codex`，可通过环境变量覆盖：
 
 ```bash
-CODEX_CLI_PATH=/path/to/codex npm run dev -- --port 5173
+CODEX_CLI_PATH=/path/to/codex npm run launch:fixed
 ```
 
 小红书热门搜索通过本机 `xhs` CLI 触发，默认命令是 `/Users/ice/.local/bin/xhs`，默认只使用 CLI 已保存登录态：
 
 ```bash
-XHS_CLI_COMMAND=/path/to/xhs XHS_COOKIE_SOURCE=none npm run dev -- --port 5173
+XHS_CLI_COMMAND=/path/to/xhs XHS_COOKIE_SOURCE=none npm run launch:fixed
 ```
 
 如果搜索提示未登录，请先在终端手动运行 `xhs login`，再回到页面点击搜索。前端不会读取、展示或保存 Cookie。

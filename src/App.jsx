@@ -11,11 +11,9 @@ import {
 
 const STORAGE_PREFIX = "mint-atelier-v2";
 
-const defaultPersona =
-  "26 岁轻熟风穿搭博主，分享通勤、周末出行和小个子显高搭配。表达温柔具体，重点放在真实穿着体验、单品组合和可复用公式。";
+const defaultPersona = "26 岁轻熟风穿搭博主，分享通勤、周末出行和约会搭配。表达温柔具体，重点放在真实穿着体验、单品组合和可复用公式。";
 const defaultKeyword = "夏日通勤穿搭";
-const defaultBrief =
-  "想写一篇适合上班族收藏的内容，重点讲清爽、显精神、不闷热，语气像朋友认真分享。";
+const defaultBrief = "创作上班族可收藏实用穿搭内容，核心突出清爽利落、提气色不闷汗，口吻贴近闺蜜走心分享。";
 
 const defaultModelConfig = {
   text: {

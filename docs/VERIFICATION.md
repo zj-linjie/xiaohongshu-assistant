@@ -8,24 +8,24 @@
 npm run build
 ```
 
-默认本地预览：
+默认固定地址本地预览：
 
 ```bash
-npm run dev -- --port 5173
+npm run launch:fixed
 ```
 
-如果默认端口被占用，可以使用相邻端口做浏览器检查，但文档中的默认命令仍以 `5173` 为准。
+固定地址是 `http://127.0.0.1:52880`。如果该端口被占用，需要先停止占用进程；不要让 Vite 自动漂移端口，否则浏览器 `localStorage` 中的模型配置会进入另一份 origin 缓存。
 
 本地 Codex CLI 路径默认是 `/opt/homebrew/bin/codex`。需要覆盖时：
 
 ```bash
-CODEX_CLI_PATH=/path/to/codex npm run dev -- --port 5173
+CODEX_CLI_PATH=/path/to/codex npm run launch:fixed
 ```
 
 本地 Codex API smoke test：
 
 ```bash
-curl -sS http://127.0.0.1:5173/api/codex/generate \
+curl -sS http://127.0.0.1:52880/api/codex/generate \
   -H 'Content-Type: application/json' \
   --data '{"kind":"topics","persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","ragItems":[{"id":"note-1","title":"通勤清爽穿搭","excerpt":"薄针织、棉麻半裙和低饱和配色。","tags":["通勤穿搭"],"metrics":"赞 1000","source":"manual"}],"modelName":"Codex CLI"}'
 ```
@@ -33,7 +33,7 @@ curl -sS http://127.0.0.1:5173/api/codex/generate \
 本地模型决策 API smoke test：
 
 ```bash
-curl -sS http://127.0.0.1:5173/api/codex/decide \
+curl -sS http://127.0.0.1:52880/api/codex/decide \
   -H 'Content-Type: application/json' \
   --data '{"decisionKind":"topic","persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","writingBrief":"清爽通勤","ragItems":[{"id":"note-1","title":"通勤清爽穿搭","excerpt":"薄针织、棉麻半裙和低饱和配色。","tags":["通勤穿搭"],"metrics":"赞 1000","source":"manual"}],"options":[{"id":"topic-1","title":"35 度通勤也清爽","angle":"棉麻半裙搭配","audience":"上班族","reason":"具体可执行","hook":"不闷热"},{"id":"topic-2","title":"周末出行轻便搭","angle":"轻便出行","audience":"周末出门人群","reason":"轻松","hook":"少带也好看"}],"modelName":"Codex CLI"}'
 ```
@@ -41,7 +41,7 @@ curl -sS http://127.0.0.1:5173/api/codex/decide \
 封面图 API smoke test：
 
 ```bash
-curl -sS http://127.0.0.1:5173/api/codex/cover-image \
+curl -sS http://127.0.0.1:52880/api/codex/cover-image \
   -H 'Content-Type: application/json' \
   --data '{"persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","selectedDraft":{"title":"35 度通勤也清爽","body":"薄针织和棉麻半裙组合，适合通勤收藏。#夏日通勤[话题]#"},"selectedPrompt":{"title":"薄荷通勤静物","prompt":"4:5 小红书封面，薄荷绿通勤穿搭静物，棉麻半裙、浅色包、色卡和花材，柔和自然光，明确排除真人、脸、手和动物。"},"modelName":"Codex CLI"}'
 ```
@@ -51,7 +51,7 @@ curl -sS http://127.0.0.1:5173/api/codex/cover-image \
 云端文本 API smoke test 需要使用真实 OpenAI-compatible provider 或本地 mock provider：
 
 ```bash
-curl -sS http://127.0.0.1:5173/api/cloud/generate \
+curl -sS http://127.0.0.1:52880/api/cloud/generate \
   -H 'Content-Type: application/json' \
   --data '{"kind":"topics","persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","ragItems":[{"id":"note-1","title":"通勤清爽穿搭","excerpt":"薄针织、棉麻半裙和低饱和配色。","tags":["通勤穿搭"],"metrics":"赞 1000","source":"manual"}],"modelName":"gpt-compatible","apiKey":"test-key","baseUrl":"http://127.0.0.1:5999/v1"}'
 ```
@@ -59,7 +59,7 @@ curl -sS http://127.0.0.1:5173/api/cloud/generate \
 云端模型决策 API smoke test 需要使用真实 OpenAI-compatible provider 或本地 mock provider：
 
 ```bash
-curl -sS http://127.0.0.1:5173/api/cloud/decide \
+curl -sS http://127.0.0.1:52880/api/cloud/decide \
   -H 'Content-Type: application/json' \
   --data '{"decisionKind":"rag","persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","writingBrief":"清爽通勤","ragItems":[],"options":[{"id":"xhs-1","title":"通勤清爽穿搭","excerpt":"薄针织、棉麻半裙和低饱和配色。","tags":["通勤穿搭"],"metrics":"赞 1000","source":"manual"},{"id":"xhs-2","title":"露营装备","excerpt":"帐篷和户外装备。","tags":["露营"],"metrics":"赞 100","source":"manual"}],"modelName":"gpt-compatible","apiKey":"test-key","baseUrl":"http://127.0.0.1:5999/v1"}'
 ```
@@ -67,7 +67,7 @@ curl -sS http://127.0.0.1:5173/api/cloud/decide \
 云端图片 API smoke test 需要确认响应里的 `image.src` 仍是 `/generated/covers/*.png`，并请求该 URL 验证 PNG：
 
 ```bash
-curl -sS http://127.0.0.1:5173/api/cloud/cover-image \
+curl -sS http://127.0.0.1:52880/api/cloud/cover-image \
   -H 'Content-Type: application/json' \
   --data '{"persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","selectedDraft":{"title":"35 度通勤也清爽","body":"薄针织和棉麻半裙组合，适合通勤收藏。#夏日通勤[话题]#"},"selectedPrompt":{"title":"薄荷通勤静物","prompt":"4:5 小红书封面，薄荷绿通勤穿搭静物，棉麻半裙、浅色包、色卡和花材，柔和自然光，明确排除真人、脸、手和动物。"},"modelName":"image-compatible","apiKey":"test-key","baseUrl":"http://127.0.0.1:5999/v1"}'
 ```
@@ -77,8 +77,8 @@ curl -sS http://127.0.0.1:5173/api/cloud/cover-image \
 在本地服务器运行后执行：
 
 ```bash
-npx playwright@1.61.1 screenshot --viewport-size=1440,900 http://127.0.0.1:5173/ /tmp/xhs-g4-1440.png
-npx playwright@1.61.1 screenshot --viewport-size=1440,720 --full-page http://127.0.0.1:5173/ /tmp/xhs-g4-scroll-check.png
+npx playwright@1.61.1 screenshot --viewport-size=1440,900 http://127.0.0.1:52880/ /tmp/xhs-g4-1440.png
+npx playwright@1.61.1 screenshot --viewport-size=1440,720 --full-page http://127.0.0.1:52880/ /tmp/xhs-g4-scroll-check.png
 ```
 
 截图证据默认作为临时 QA 产物，不需要提交到仓库，除非用户明确要求。

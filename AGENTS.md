@@ -37,7 +37,7 @@
 ## 开发命令
 
 ```bash
-npm run dev -- --port 5173
+npm run launch:fixed
 npm run build
 ```
 
