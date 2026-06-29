@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CodexApiError } from "./validation.mjs";
 
-const DEFAULT_CODEX_PATH = "/opt/homebrew/bin/codex";
+const DEFAULT_CODEX_PATH = "codex";
 const TIMEOUT_MS = 180_000;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
