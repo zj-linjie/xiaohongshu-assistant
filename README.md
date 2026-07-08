@@ -4,6 +4,10 @@
 
 项目保持 3 列内容创作工作台形态，并保留 Pastel 3D Claymorphism 视觉方向。当前链路支持本机 `xhs` CLI 热门搜索、本地 Codex CLI 生成，以及云端 OpenAI-compatible API 生成；RAG 入库支持用户手动勾选确认，也支持用户点击“自动化生成”后由文案模型选择参考内容并入库。
 
+## 预览
+
+![薄荷工坊桌面工作台预览](public/assets/mint-atelier-preview.jpg)
+
 ## 本地运行
 
 最省心的启动方式：
