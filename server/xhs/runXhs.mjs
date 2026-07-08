@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CodexApiError } from "../codex/validation.mjs";
 
-const DEFAULT_XHS_CLI_COMMAND = "/Users/ice/.local/bin/xhs";
+const DEFAULT_XHS_CLI_COMMAND = "xhs";
 const DEFAULT_COOKIE_SOURCE = "none";
 const TIMEOUT_MS = 60_000;
 const MAX_DETAILS_CHARS = 800;

@@ -47,13 +47,13 @@ npm run dev
 npm run build
 ```
 
-本地 Codex CLI 默认使用 `/opt/homebrew/bin/codex`，可通过环境变量覆盖：
+本地 Codex CLI 默认通过系统 PATH 查找 `codex`，可通过环境变量覆盖：
 
 ```bash
 CODEX_CLI_PATH=/path/to/codex npm run launch:fixed
 ```
 
-小红书热门搜索通过本机 `xhs` CLI 触发，默认命令是 `/Users/ice/.local/bin/xhs`，默认只使用 CLI 已保存登录态：
+小红书热门搜索通过本机 `xhs` CLI 触发，默认通过系统 PATH 查找 `xhs`，默认只使用 CLI 已保存登录态：
 
 ```bash
 XHS_CLI_COMMAND=/path/to/xhs XHS_COOKIE_SOURCE=none npm run launch:fixed

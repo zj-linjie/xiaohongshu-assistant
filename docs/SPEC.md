@@ -37,7 +37,7 @@
 
 ### 3.3 热门内容搜索
 
-用户可以点击搜索按钮，通过本机 `xhs` CLI 获取与关键词相关的小红书热门内容。默认命令为 `/Users/ice/.local/bin/xhs --cookie-source none search "<关键词>" --sort popular --type all --page 1 --json`，可通过 `XHS_CLI_COMMAND` 和 `XHS_COOKIE_SOURCE` 覆盖。搜索必须由用户点击“搜索热门内容”或“自动化生成”触发，失败时需要显示明确、可理解的错误提示。
+用户可以点击搜索按钮，通过本机 `xhs` CLI 获取与关键词相关的小红书热门内容。默认通过系统 PATH 查找 `xhs` 执行 `xhs --cookie-source none search "<关键词>" --sort popular --type all --page 1 --json`，可通过 `XHS_CLI_COMMAND` 和 `XHS_COOKIE_SOURCE` 覆盖。搜索必须由用户点击“搜索热门内容”或“自动化生成”触发，失败时需要显示明确、可理解的错误提示。
 
 服务端只消费 `xhs` 的结构化 JSON 输出，并返回归一化后的搜索项；不得把原始 CLI 输出、Cookie 或 `xsec_token` 返回给浏览器。
 
@@ -99,7 +99,7 @@
 
 ### 3.10 模型配置
 
-文案生成模型和图片生成模型需要支持单独配置。用户可以选择本地 CLI 或云端 API。本地 CLI 路线通过本机 `codex exec` 执行，默认 CLI 路径是 `/opt/homebrew/bin/codex`，可以用 `CODEX_CLI_PATH` 覆盖；本地图片路线的底层模型由 Codex worker 的 native imagegen 能力决定。云端文本路线走 OpenAI-compatible `POST /chat/completions`，云端图片路线走 Images-compatible `POST /images/generations`。
+文案生成模型和图片生成模型需要支持单独配置。用户可以选择本地 CLI 或云端 API。本地 CLI 路线通过本机 `codex exec` 执行，默认通过系统 PATH 查找 `codex`，可以用 `CODEX_CLI_PATH` 覆盖；本地图片路线的底层模型由 Codex worker 的 native imagegen 能力决定。云端文本路线走 OpenAI-compatible `POST /chat/completions`，云端图片路线走 Images-compatible `POST /images/generations`。
 
 用户至少可以分别配置：
 

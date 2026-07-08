@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CodexApiError } from "./validation.mjs";
 
-const DEFAULT_CODEX_PATH = "/opt/homebrew/bin/codex";
+const DEFAULT_CODEX_PATH = "codex";
 const GENERATED_ROUTE_PREFIX = "/generated/covers/";
 const IMAGEGEN_TIMEOUT_MS = 600_000;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
