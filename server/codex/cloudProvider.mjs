@@ -32,6 +32,46 @@ function sanitizeDetails(value, apiKey) {
   return text.slice(0, 900);
 }
 
+function extractUpstreamError(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+
+  try {
+    const parsed = JSON.parse(text);
+    return compactText(
+      parsed?.error?.message ??
+      parsed?.error?.detail ??
+      parsed?.message ??
+      parsed?.detail,
+      360,
+    );
+  } catch {
+    return /^\s*</.test(text) ? "" : compactText(text, 360);
+  }
+}
+
+function isOfficialKimiApi(value) {
+  try {
+    const url = new URL(value);
+    const hostname = url.hostname.toLowerCase();
+    return hostname === "api.moonshot.cn" ||
+      hostname === "api.moonshot.ai" ||
+      (hostname === "api.kimi.com" && /^\/coding(?:\/|$)/i.test(url.pathname));
+  } catch {
+    return false;
+  }
+}
+
+export function buildUpstreamHttpError({ status, text, apiKey }) {
+  const upstreamError = sanitizeDetails(extractUpstreamError(text), apiKey);
+  return new CodexApiError(
+    "API_HTTP_ERROR",
+    `云端 API 请求失败：HTTP ${status}${upstreamError ? ` · ${upstreamError}` : ""}。`,
+    502,
+    sanitizeDetails(text, apiKey),
+  );
+}
+
 function requireCloudConfig(payload) {
   const modelName = String(payload.modelName ?? "").trim();
   const apiKey = String(payload.apiKey ?? "").trim();
@@ -102,12 +142,7 @@ async function fetchJson({ url, apiKey, body, timeoutMs }) {
     const text = await response.text();
 
     if (!response.ok) {
-      throw new CodexApiError(
-        "API_HTTP_ERROR",
-        `云端 API 请求失败：HTTP ${response.status}。`,
-        502,
-        sanitizeDetails(text, apiKey),
-      );
+      throw buildUpstreamHttpError({ status: response.status, text, apiKey });
     }
 
     if (/^\s*</.test(text)) {
@@ -211,8 +246,8 @@ function parseCloudDecision(raw, payload) {
   }
 }
 
-function chatBody({ payload, modelName, prompt }) {
-  return {
+export function buildCloudChatBody({ payload, modelName, baseUrl, prompt }) {
+  const body = {
     model: modelName,
     messages: [
       {
@@ -224,10 +259,20 @@ function chatBody({ payload, modelName, prompt }) {
         content: prompt,
       },
     ],
-    temperature: 0.7,
-    max_tokens: payload.kind === "drafts" ? 5200 : 3200,
     stream: false,
   };
+
+  if (isOfficialKimiApi(baseUrl)) {
+    // Kimi families enforce different temperature values. Omitting the field
+    // lets each model use its supported default instead of returning HTTP 400.
+    body.max_completion_tokens = payload.kind === "drafts" ? 5200 : 3200;
+    body.response_format = { type: "json_object" };
+  } else {
+    body.temperature = 0.7;
+    body.max_tokens = payload.kind === "drafts" ? 5200 : 3200;
+  }
+
+  return body;
 }
 
 export async function runCloudGeneration(payload) {
@@ -239,7 +284,7 @@ export async function runCloudGeneration(payload) {
     url: endpointUrl,
     apiKey,
     timeoutMs: TEXT_TIMEOUT_MS,
-    body: chatBody({ payload, modelName, prompt }),
+    body: buildCloudChatBody({ payload, modelName, baseUrl, prompt }),
   });
   const raw = extractGeneratedText(result.json);
   const items = parseCloudItems(payload.kind, raw, payload);
@@ -261,7 +306,7 @@ export async function runCloudDecision(payload) {
     url: endpointUrl,
     apiKey,
     timeoutMs: TEXT_TIMEOUT_MS,
-    body: chatBody({ payload, modelName, prompt }),
+    body: buildCloudChatBody({ payload, modelName, baseUrl, prompt }),
   });
   const raw = extractGeneratedText(result.json);
   const decision = parseCloudDecision(raw, payload);

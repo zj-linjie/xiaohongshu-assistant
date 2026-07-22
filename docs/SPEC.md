@@ -110,7 +110,7 @@ Mint Atelier print protocol 规定：CLI 必须支持 `--version`；文本调用
 
 本地 CLI 返回文案和封面 Prompt 时，服务端兼容约定字段的常见英文、snake_case 与中文别名。文案的 `coverDirection` 完全缺失时，服务端根据文案标题补充静物封面方向；其他必需内容、数量和话题标签仍保持强校验。本地 CLI 的结构化输出错误统一使用 `LOCAL_CLI_BAD_JSON`。
 
-云端文本路线走 OpenAI-compatible `POST /chat/completions`，云端图片路线走 Images-compatible `POST /images/generations`。
+云端文本路线走 OpenAI-compatible `POST /chat/completions`，云端图片路线走 Images-compatible `POST /images/generations`。当文本 API Base URL 指向 Kimi 官方 `api.moonshot.cn`、`api.moonshot.ai` 或 Kimi Code 会员接口 `api.kimi.com/coding` 时，服务端使用 Kimi 兼容参数：不固定传入 `temperature`，让不同模型使用各自支持的默认值；输出长度使用 `max_completion_tokens`，并请求 `json_object` 输出。云端上游的 HTTP 错误需要保留状态码并展示供应商返回的具体原因，但不得泄露 API Key。
 
 用户至少可以分别配置：
 

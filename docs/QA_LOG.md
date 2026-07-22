@@ -1,5 +1,13 @@
 # QA_LOG.md
 
+## 2026-07-22 Kimi 云端 API HTTP 400 兼容修复
+
+- Kimi 官方 `api.moonshot.cn` / `api.moonshot.ai` 文本请求不再固定发送 `temperature: 0.7`，避免 K2.5、K2.6、K3 等模型因采样参数限制返回 HTTP 400。
+- Kimi Code 会员 OpenAI-compatible 地址 `https://api.kimi.com/coding/v1` 同样纳入兼容识别；真实浏览器请求已复现该接口对 `kimi-for-coding` 返回 `invalid temperature: only 1 is allowed for this model`。
+- Kimi 官方请求改用 `max_completion_tokens` 并启用 `response_format: {"type":"json_object"}`；其他 OpenAI-compatible 供应商继续保留原请求字段，避免扩大兼容性影响。
+- 云端 API 非 2xx 响应会解析并展示供应商的 `error.message`，同时继续对 API Key 脱敏。
+- Chrome 真实 Kimi Code 会员 API smoke：使用 `kimi-for-coding` 与 `https://api.kimi.com/coding/v1`，先生成正好 10 个选题，再生成正好 5 篇文案和 5 份封面 Prompt；文案均保留 `#话题名称[话题]#`，Prompt 均明确排除真人、脸、手和动物。页面最终状态为三段云端文本 API 成功，无 HTTP 400/401。
+
 ## 当前状态
 
 - 项目：`薄荷工坊 / Mint Atelier`

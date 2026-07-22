@@ -14,6 +14,7 @@
 - 文案正文包含小红书话题标签，格式为 `#话题名称[话题]#`。
 - 文案生成模型和图片生成模型支持单独配置，并自动缓存。
 - 当前版本支持三类真实本地/云端链路：本机 `xhs` CLI 热门搜索、本地可选 CLI（内置 Codex/Kimi/Claude，并支持符合 Mint Atelier print protocol 的自定义 CLI）文本生成、Codex CLI 本地图片生成，以及云端 OpenAI-compatible API 生成。RAG 入库必须来自用户手动勾选确认，或来自用户点击“自动化生成”后的本次模型决策。
+- Kimi 官方云端 API（Moonshot 开放平台与 `api.kimi.com/coding` 会员接口）自动使用其兼容请求参数，不固定发送跨模型不兼容的 `temperature`；上游 400 等错误必须显示经过脱敏的具体原因。
 
 ## 风控边界
 
