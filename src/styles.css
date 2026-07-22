@@ -1393,10 +1393,57 @@ button {
   font-weight: 900;
 }
 
-.mini-field input {
+.mini-field input,
+.mini-field select {
+  width: 100%;
   height: 34px;
+  border: 1px solid rgba(116, 91, 136, 0.12);
   border-radius: 15px;
+  color: #4c405f;
+  background: rgba(255, 255, 255, 0.82);
   font-size: 12px;
+}
+
+.mini-field select {
+  padding: 0 30px 0 12px;
+  appearance: auto;
+}
+
+.cli-detection-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.cli-detection-row button {
+  min-height: 30px;
+  padding: 0 11px;
+  border-radius: 13px;
+  color: #2c766d;
+  background: linear-gradient(145deg, #c8f3eb, #f0fffb);
+  font-size: 10px;
+  box-shadow:
+    3px 4px 9px rgba(82, 157, 145, 0.12),
+    inset 0 2px 5px rgba(255, 255, 255, 0.82);
+}
+
+.cli-detection-row span {
+  min-width: 0;
+  color: #81748e;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.cli-detection-row span.ready {
+  color: #268275;
+}
+
+.cli-detection-row span.missing {
+  color: #b35b72;
 }
 
 .notice-card header {

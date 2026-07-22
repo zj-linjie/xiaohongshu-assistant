@@ -30,6 +30,32 @@ curl -sS http://127.0.0.1:52880/api/codex/generate \
   --data '{"kind":"topics","persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","ragItems":[{"id":"note-1","title":"通勤清爽穿搭","excerpt":"薄针织、棉麻半裙和低饱和配色。","tags":["通勤穿搭"],"metrics":"赞 1000","source":"manual"}],"modelName":"Codex CLI"}'
 ```
 
+本机 CLI 检测必须由用户主动触发。API smoke test：
+
+```bash
+curl -sS http://127.0.0.1:52880/api/local-cli/detect \
+  -H 'Content-Type: application/json' \
+  --data '{}'
+```
+
+响应中已安装的 CLI 应返回 `available: true`、版本号和能力声明。Kimi CLI 可用时，真实文本 smoke test：
+
+```bash
+curl -sS -m 180 http://127.0.0.1:52880/api/local-cli/generate \
+  -H 'Content-Type: application/json' \
+  --data '{"kind":"topics","persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","ragItems":[{"id":"note-1","title":"通勤清爽穿搭","excerpt":"薄针织、棉麻半裙和低饱和配色。","tags":["通勤穿搭"],"metrics":"赞 1000","source":"manual"}],"cliId":"kimi","modelName":""}'
+```
+
+Kimi smoke test 需要确认响应返回正好 10 个选题、`commandPreview` 包含 `kimi`，且状态码为 200。Claude Code 可用时，使用其官方非交互 JSON 模式执行同类 smoke test：
+
+```bash
+curl -sS -m 180 http://127.0.0.1:52880/api/local-cli/generate \
+  -H 'Content-Type: application/json' \
+  --data '{"kind":"topics","persona":"轻熟风穿搭博主","keyword":"夏日通勤穿搭","ragItems":[{"id":"note-1","title":"通勤清爽穿搭","excerpt":"薄针织、棉麻半裙和低饱和配色。","tags":["通勤穿搭"],"metrics":"赞 1000","source":"manual"}],"cliId":"claude","modelName":""}'
+```
+
+Claude smoke test 需要确认响应返回正好 10 个选题、`commandPreview` 包含 `claude` 和 `--output-format json`，且状态码为 200。自定义规范 CLI 使用相同接口并传入 `cliId: "custom"` 与 `cliCommand`；命令必须满足 `docs/SPEC.md` 定义的 print protocol。
+
 本地模型决策 API smoke test：
 
 ```bash
@@ -117,7 +143,10 @@ npx playwright@1.61.1 screenshot --viewport-size=1440,720 --full-page http://127
 - 点击某个 Prompt 后通过所选图片通道生成并展示 PNG 封面图，并保留原始 Prompt。
 - 点击“自动化生成”后，系统按搜索、模型选择并入库 RAG、生成并选择选题、生成并选择文案、生成并选择封面 Prompt、生成封面图的顺序串行推进。
 - 自动化流程中右侧状态卡显示当前自动化阶段；中途失败时保留已完成阶段的可见结果和选中态，并显示具体错误。
-- 文案模型和图片模型可分别切换本地 CLI / 云端 API，并编辑模型名称、API Key 和 API Base URL。
+- 文案模型和图片模型可分别切换本地 CLI / 云端 API；点击“检测本机 CLI”后可见 Codex/Kimi/Claude 的安装状态和版本。
+- 文案本地 CLI 可选择 Codex、Kimi、Claude 或自定义规范 CLI；图片本地 CLI 只显示声明图片能力的选项，Kimi 和 Claude 不应出现在图片 CLI 下拉框中。
+- 自定义规范 CLI 可填写 PATH 命令名或绝对路径；缺少命令、不可执行、输出不合规时显示具体错误且不会回退到其他 CLI。
+- 本地 CLI 模型别名可以留空使用 CLI 默认值；云端 API 仍可编辑模型名称、API Key 和 API Base URL。
 - 云端 API 缺少模型名、API Key 或 API Base URL 时，生成动作显示配置缺失提示且不发请求。
 - 右侧状态卡显示最近一次生成通道、本地命令或云端 endpoint 摘要、耗时或错误码。
 - 右侧错误覆盖按钮可以显示搜索失败、RAG 失败、选题失败、文案失败、Prompt 失败、封面失败、配置缺失、Key 无效、CLI 不可用和网络失败提示。

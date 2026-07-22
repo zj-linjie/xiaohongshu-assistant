@@ -22,6 +22,11 @@ import {
   runXhsSearch,
   validateXhsSearchRequest,
 } from "../xhs/runXhs.mjs";
+import {
+  assertLocalImageCli,
+  detectLocalClis,
+  runLocalTextCli,
+} from "../localCli/registry.mjs";
 
 const MAX_BODY_BYTES = 128 * 1024;
 
@@ -82,6 +87,10 @@ export function codexGenerateMiddleware() {
       "/api/codex/generate",
       "/api/codex/decide",
       "/api/codex/cover-image",
+      "/api/local-cli/detect",
+      "/api/local-cli/generate",
+      "/api/local-cli/decide",
+      "/api/local-cli/cover-image",
       "/api/cloud/generate",
       "/api/cloud/decide",
       "/api/cloud/cover-image",
@@ -105,6 +114,17 @@ export function codexGenerateMiddleware() {
     try {
       const payload = await readJsonBody(req);
 
+      if (requestUrl.pathname === "/api/local-cli/detect") {
+        const clis = await detectLocalClis(payload);
+        sendJson(res, 200, {
+          ok: true,
+          kind: "localCliDetection",
+          clis,
+          generatedAt: new Date().toISOString(),
+        });
+        return;
+      }
+
       if (requestUrl.pathname === "/api/xhs/search") {
         const searchPayload = validateXhsSearchRequest(payload);
         const searchResult = await runXhsSearch(searchPayload);
@@ -121,8 +141,14 @@ export function codexGenerateMiddleware() {
         return;
       }
 
-      if (requestUrl.pathname === "/api/codex/cover-image") {
+      if (
+        requestUrl.pathname === "/api/codex/cover-image" ||
+        requestUrl.pathname === "/api/local-cli/cover-image"
+      ) {
         validateCoverImageRequest(payload);
+        if (requestUrl.pathname === "/api/local-cli/cover-image") {
+          assertLocalImageCli(payload);
+        }
         const codexResult = await runCoverImagegen(payload);
 
         sendJson(res, 200, {
@@ -171,14 +197,21 @@ export function codexGenerateMiddleware() {
         return;
       }
 
-      if (requestUrl.pathname === "/api/codex/decide") {
+      if (
+        requestUrl.pathname === "/api/codex/decide" ||
+        requestUrl.pathname === "/api/local-cli/decide"
+      ) {
         validateDecisionRequest(payload);
         const prompt = buildDecisionPrompt(payload);
-        const codexResult = await runCodex({
-          prompt,
-          modelName: payload.modelName,
-        });
-        const parsed = parseJsonFromCodex(codexResult.raw);
+        const localResult = requestUrl.pathname === "/api/local-cli/decide"
+          ? await runLocalTextCli({
+              prompt,
+              modelName: payload.modelName,
+              cliId: payload.cliId,
+              cliCommand: payload.cliCommand,
+            })
+          : await runCodex({ prompt, modelName: payload.modelName });
+        const parsed = parseJsonFromCodex(localResult.raw);
         const decision = normalizeDecisionResult(parsed, payload);
 
         sendJson(res, 200, {
@@ -187,9 +220,9 @@ export function codexGenerateMiddleware() {
           decisionKind: payload.decisionKind,
           selectedIds: decision.selectedIds,
           reason: decision.reason,
-          raw: codexResult.raw,
-          commandPreview: codexResult.commandPreview,
-          durationMs: codexResult.durationMs,
+          raw: localResult.raw,
+          commandPreview: localResult.commandPreview,
+          durationMs: localResult.durationMs,
           generatedAt: new Date().toISOString(),
         });
         return;
@@ -213,24 +246,31 @@ export function codexGenerateMiddleware() {
       }
 
       const prompt = buildCodexPrompt(payload);
-      const codexResult = await runCodex({
-        prompt,
-        modelName: payload.modelName,
-      });
-      const parsed = parseJsonFromCodex(codexResult.raw);
+      const localResult = requestUrl.pathname === "/api/local-cli/generate"
+        ? await runLocalTextCli({
+            prompt,
+            modelName: payload.modelName,
+            cliId: payload.cliId,
+            cliCommand: payload.cliCommand,
+          })
+        : await runCodex({ prompt, modelName: payload.modelName });
+      const parsed = parseJsonFromCodex(localResult.raw);
       const items = normalizeCodexItems(payload.kind, parsed, payload);
 
       sendJson(res, 200, {
         ok: true,
         kind: payload.kind,
         items,
-        raw: codexResult.raw,
-        commandPreview: codexResult.commandPreview,
-        durationMs: codexResult.durationMs,
+        raw: localResult.raw,
+        commandPreview: localResult.commandPreview,
+        durationMs: localResult.durationMs,
         generatedAt: new Date().toISOString(),
       });
     } catch (error) {
-      const { status, payload } = serializeError(error);
+      const normalizedError = requestUrl.pathname.startsWith("/api/local-cli/") && error?.code === "CODEX_BAD_JSON"
+        ? new CodexApiError("LOCAL_CLI_BAD_JSON", error.message, error.status, error.details)
+        : error;
+      const { status, payload } = serializeError(normalizedError);
       sendJson(res, status, payload);
     }
   };

@@ -28,6 +28,45 @@
 
 ## 最近验证记录
 
+### 2026-07-22 Claude Code 内置适配器
+
+验证环境：
+
+- 命令：`npm run build`、`node --check server/localCli/registry.mjs`、`git diff --check`
+- App URL：`http://127.0.0.1:52880/`
+- 本机 Claude Code：`2.1.205`
+
+已验证：
+
+- 本地 CLI 注册表新增 Claude Code，默认从 PATH 查找 `claude`，支持 `CLAUDE_CLI_PATH` 覆盖；能力声明为文本可用、图片不可用。
+- 用户点击“检测本机 CLI”后，`POST /api/local-cli/detect` 返回 Claude Code 可用状态和版本 `2.1.205 (Claude Code)`；页面不会后台自动检测。
+- Claude 文本适配器使用 `claude --print <prompt> --output-format json`，解析响应的 `result` 字段；调用时启用 safe mode、关闭工具调用和会话持久化。
+- 真实 Claude API smoke：`POST /api/local-cli/generate` 返回 HTTP 200 和正好 10 个结构化选题，耗时约 40s；`commandPreview` 包含 Claude 非交互 JSON 模式及安全参数。
+- 文案本地 CLI 下拉框支持 Codex、Kimi、Claude 和自定义规范 CLI；图片本地 CLI 仍只显示声明图片能力的 Codex。
+
+### 2026-07-22 Kimi CLI 与通用本机 CLI 协议
+
+验证环境：
+
+- 命令：`npm run build`、`git diff --check`
+- App URL：`http://127.0.0.1:52880/`
+- 浏览器：用户 Chrome
+- 本机 CLI：Kimi CLI `0.28.1`（OAuth，默认模型 `kimi-code/k3`）、Codex CLI `0.137.0`
+
+已验证：
+
+- 新增 `/api/local-cli/detect`、`/api/local-cli/generate`、`/api/local-cli/decide` 和 `/api/local-cli/cover-image`；保留原 `/api/codex/*` 兼容接口。
+- “检测本机 CLI”只在用户点击后执行；检测到 Codex `codex-cli 0.137.0` 和 Kimi `0.28.1`，页面显示版本与可用状态。
+- 文案本地 CLI 下拉框支持 Codex、Kimi、自定义规范 CLI；图片本地 CLI 只显示声明图片能力的 Codex，不把 Kimi 错误呈现为图片生成器。
+- 自定义规范 CLI 的绝对路径分支已用 `/Users/ice/.kimi-code/bin/kimi` 检测通过，返回 `规范 CLI（kimi）` 与版本 `0.28.1`；以 `cliId: custom` 执行真实结构化决策也成功返回有效候选 ID。
+- 真实 Kimi API smoke：`POST /api/local-cli/generate` 返回正好 10 个结构化选题，耗时约 44s；`POST /api/local-cli/decide` 返回有效候选 ID，耗时约 14s。
+- Kimi 文案字段兼容回归：服务端接受 `coverDirection` 的 snake_case、常见英文别名和中文别名；模型完全漏传该字段时，根据文案标题生成安全的静物封面方向，不再整批报错。封面 Prompt 同步兼容常见字段别名。
+- 本地 CLI 结构化输出失败统一返回 `LOCAL_CLI_BAD_JSON`，不再把 Kimi 等本地 CLI 的错误误标为 `CODEX_BAD_JSON`。
+- 修复后真实调用 `POST /api/local-cli/generate`（Kimi，`drafts`）成功返回 5 篇文案，全部包含 `title`、`body`、`coverDirection` 和小红书话题标签，耗时约 79s。
+- Chrome 主流程真实跑通：xhs 返回 22 条搜索结果；用户勾选 2 条并手动入库；Kimi 依次生成 10 个选题、5 篇文案、5 份封面 Prompt。文案正文保留 `#话题名称[话题]#`，Prompt 保留“明确排除真人、脸、手和动物”。
+- Chrome 保持 3 列 Pastel 3D Claymorphism 工作台，Kimi 选择器和检测状态没有破坏布局；Console `error` / `warn` 为 0。
+- 本机 Codex 图片链路当前被外部版本状态阻断：已安装的 CLI `0.137.0` 无法使用用户配置中的 `gpt-5.6-sol`。服务端现在返回 `CODEX_UPDATE_REQUIRED` 和可操作的 `codex update` 提示，不再只显示退出码 1；Kimi 文本链路不受影响。
+
 ### 2026-06-27 自动化生成入口与决策接口
 
 验证环境：

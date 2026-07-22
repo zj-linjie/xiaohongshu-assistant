@@ -250,12 +250,16 @@ export async function runCoverImagegen(payload) {
         }
 
         if (code !== 0) {
+          const details = [stderr.trim(), stdout.trim(), lastMessage.trim()].filter(Boolean).join("\n\n");
+          const requiresUpdate = /requires a newer version of Codex|upgrade to the latest app or CLI/i.test(details);
           reject(
             new CodexApiError(
-              "CODEX_FAILED",
-              `Codex CLI imagegen 执行失败，退出码 ${code}。`,
+              requiresUpdate ? "CODEX_UPDATE_REQUIRED" : "CODEX_FAILED",
+              requiresUpdate
+                ? "Codex CLI 版本过旧，无法使用当前图片模型。请先在终端运行 `codex update`，再重新生成封面图。"
+                : `Codex CLI imagegen 执行失败，退出码 ${code}。`,
               502,
-              [stderr.trim(), stdout.trim(), lastMessage.trim()].filter(Boolean).join("\n\n"),
+              details,
             ),
           );
           return;

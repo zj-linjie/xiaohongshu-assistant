@@ -3,9 +3,10 @@ import {
   requestCloudCoverImage,
   requestCloudDecision,
   requestCloudGeneration,
-  requestCodexCoverImage,
-  requestCodexDecision,
-  requestCodexGeneration,
+  requestLocalCliCoverImage,
+  requestLocalCliDecision,
+  requestLocalCliDetection,
+  requestLocalCliGeneration,
   requestXhsSearch,
 } from "./codexClient.js";
 
@@ -18,17 +19,56 @@ const defaultBrief = "创作上班族可收藏实用穿搭内容，核心突出�
 const defaultModelConfig = {
   text: {
     provider: "local",
+    cliId: "codex",
+    cliCommand: "",
     modelName: "Codex CLI / gpt-5-codex",
     apiKey: "",
     baseUrl: "",
   },
   image: {
     provider: "local",
+    cliId: "codex",
+    cliCommand: "",
     modelName: "Codex CLI / imagegen skill",
     apiKey: "",
     baseUrl: "",
   },
 };
+
+const defaultLocalClis = [
+  {
+    id: "codex",
+    label: "Codex CLI",
+    description: "Codex 原生非交互模式",
+    capabilities: { text: true, image: true },
+    available: null,
+    commandPreview: "codex exec ...",
+  },
+  {
+    id: "kimi",
+    label: "Kimi CLI",
+    description: "Kimi Code CLI stream-json 模式",
+    capabilities: { text: true, image: false },
+    available: null,
+    commandPreview: "kimi --prompt ... --output-format stream-json",
+  },
+  {
+    id: "claude",
+    label: "Claude Code",
+    description: "Claude Code 非交互 JSON 模式",
+    capabilities: { text: true, image: false },
+    available: null,
+    commandPreview: "claude --print ... --output-format json",
+  },
+  {
+    id: "custom",
+    label: "自定义规范 CLI",
+    description: "支持 --prompt、--model 与 stream-json 输出",
+    capabilities: { text: true, image: false },
+    available: null,
+    commandPreview: "[cli] --prompt ... --output-format stream-json",
+  },
+];
 
 const flowSteps = [
   { id: "input", label: "人设关键词", meta: "账号约束" },
@@ -68,7 +108,7 @@ const errorMessages = {
   image: "封面图生成失败：已保留原始 Prompt，可以检查图片模型配置后重新生成。",
   config: "模型配置缺失：云端 API 需要填写 API Key、API Base URL 和模型名称。",
   key: "API Key 无效：请检查密钥是否完整，或切换到本地 CLI 运行方式。",
-  cli: "本地 CLI 不可用：请确认 Codex CLI 已安装并可在终端运行。",
+  cli: "本地 CLI 不可用：请先检测并选择已安装、已登录且支持当前能力的 CLI。",
   network: "网络请求失败：请检查代理、API Base URL 或稍后重试。",
 };
 
@@ -150,14 +190,42 @@ function ProviderSwitch({ value, onChange }) {
   );
 }
 
-function ModelConfig({ title, tone, icon, value, onChange }) {
+function ModelConfig({
+  channel,
+  title,
+  tone,
+  icon,
+  value,
+  onChange,
+  localClis,
+  detectionState,
+  onDetect,
+}) {
   const update = (field, nextValue) => onChange({ ...value, [field]: nextValue });
-  const localDescription = title === "图片生成"
-    ? "本地 imagegen skill，模型由 Codex worker 决定"
+  const selectedCliId = value.cliId || "codex";
+  const selectedCli = localClis.find((item) => item.id === selectedCliId) || localClis[0];
+  const availableClis = localClis.filter((item) => item.capabilities?.[channel]);
+  const localDescription = selectedCli
+    ? `${selectedCli.label} · ${selectedCli.description}`
     : "本地 CLI 路线";
   const cloudDescription = title === "图片生成"
     ? "云端 Images API 路线"
     : "云端 Chat Completions 路线";
+
+  const changeCli = (cliId) => {
+    const defaults = {
+      codex: channel === "image" ? "Codex CLI / imagegen skill" : "Codex CLI / gpt-5-codex",
+      kimi: "",
+      claude: "",
+      custom: "",
+    };
+    onChange({
+      ...value,
+      cliId,
+      cliCommand: value.cliCommand || "",
+      modelName: defaults[cliId] ?? "",
+    });
+  };
 
   return (
     <article className="model-config-block">
@@ -169,27 +237,80 @@ function ModelConfig({ title, tone, icon, value, onChange }) {
         </div>
       </header>
       <ProviderSwitch value={value.provider} onChange={(provider) => update("provider", provider)} />
-      <label className="mini-field">
-        <span>模型名称</span>
-        <input value={value.modelName} onChange={(event) => update("modelName", event.target.value)} />
-      </label>
-      <label className="mini-field">
-        <span>API Key</span>
-        <input
-          value={value.apiKey}
-          onChange={(event) => update("apiKey", event.target.value)}
-          placeholder={value.provider === "local" ? "本地 CLI 可留空" : "必填"}
-          type="password"
-        />
-      </label>
-      <label className="mini-field">
-        <span>API Base URL</span>
-        <input
-          value={value.baseUrl}
-          onChange={(event) => update("baseUrl", event.target.value)}
-          placeholder={value.provider === "local" ? "本地 CLI 可留空" : "https://api.openai.com/v1"}
-        />
-      </label>
+      {value.provider === "local" ? (
+        <>
+          <label className="mini-field">
+            <span>本机 CLI</span>
+            <select value={selectedCliId} onChange={(event) => changeCli(event.target.value)}>
+              {availableClis.map((cli) => (
+                <option key={cli.id} value={cli.id} disabled={cli.available === false}>
+                  {cli.label}{cli.available === true ? " · 可用" : cli.available === false ? " · 不可用" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          {selectedCliId === "custom" ? (
+            <label className="mini-field">
+              <span>CLI 命令或绝对路径</span>
+              <input
+                value={value.cliCommand || ""}
+                onChange={(event) => update("cliCommand", event.target.value)}
+                placeholder="例如 my-agent-cli 或 /opt/bin/my-agent-cli"
+              />
+            </label>
+          ) : null}
+          <label className="mini-field">
+            <span>模型别名（可留空使用 CLI 默认值）</span>
+            <input
+              value={value.modelName || ""}
+              onChange={(event) => update("modelName", event.target.value)}
+              placeholder={
+                selectedCliId === "kimi"
+                  ? "例如 kimi-code/k3"
+                  : selectedCliId === "claude"
+                    ? "例如 sonnet 或 opus"
+                    : "留空使用 CLI 当前默认模型"
+              }
+            />
+          </label>
+          <div className="cli-detection-row">
+            <button type="button" onClick={onDetect} disabled={detectionState === "running"}>
+              {detectionState === "running" ? "检测中..." : "检测本机 CLI"}
+            </button>
+            <span className={selectedCli?.available === true ? "ready" : selectedCli?.available === false ? "missing" : ""}>
+              {selectedCli?.available === true
+                ? `${selectedCli.version || "已安装"}`
+                : selectedCli?.available === false
+                  ? "当前不可用"
+                  : "点击检测安装状态"}
+            </span>
+          </div>
+        </>
+      ) : (
+        <>
+          <label className="mini-field">
+            <span>模型名称</span>
+            <input value={value.modelName} onChange={(event) => update("modelName", event.target.value)} />
+          </label>
+          <label className="mini-field">
+            <span>API Key</span>
+            <input
+              value={value.apiKey}
+              onChange={(event) => update("apiKey", event.target.value)}
+              placeholder="必填"
+              type="password"
+            />
+          </label>
+          <label className="mini-field">
+            <span>API Base URL</span>
+            <input
+              value={value.baseUrl}
+              onChange={(event) => update("baseUrl", event.target.value)}
+              placeholder="https://api.openai.com/v1"
+            />
+          </label>
+        </>
+      )}
     </article>
   );
 }
@@ -202,6 +323,8 @@ export function App() {
   const [keyword, setKeyword] = useStoredState("keyword", defaultKeyword);
   const [writingBrief, setWritingBrief] = useStoredState("writingBrief", defaultBrief);
   const [modelConfig, setModelConfig] = useStoredState("modelConfig", defaultModelConfig);
+  const [localClis, setLocalClis] = useState(defaultLocalClis);
+  const [cliDetectionState, setCliDetectionState] = useState("idle");
   const [activeStep, setActiveStep] = useState("input");
   const [searchResults, setSearchResults] = useState([]);
   const [selectedSearchIds, setSelectedSearchIds] = useState([]);
@@ -289,14 +412,71 @@ export function App() {
     setModelConfig((current) => ({ ...current, [channel]: value }));
   };
 
-  const requireModelConfig = (channel) => {
-    const config = modelConfig[channel];
-    if (!config.modelName.trim()) {
-      setError("config");
-      return false;
+  const channelConfig = (channel) => ({
+    ...defaultModelConfig[channel],
+    ...(modelConfig[channel] || {}),
+    cliId: modelConfig[channel]?.cliId || "codex",
+    cliCommand: modelConfig[channel]?.cliCommand || "",
+  });
+
+  const detectConfiguredClis = async () => {
+    const textConfig = channelConfig("text");
+    setCliDetectionState("running");
+    setCliStatus({
+      state: "running",
+      label: "本机 CLI 检测",
+      text: "正在检测 Codex、Kimi、Claude 与当前自定义规范 CLI...",
+      commandPreview: "[cli] --version",
+      durationMs: null,
+      generatedAt: "",
+      code: "",
+    });
+    try {
+      const result = await requestLocalCliDetection({
+        customCommand: textConfig.cliId === "custom" ? textConfig.cliCommand : "",
+      });
+      const nextClis = defaultLocalClis.map((fallback) => (
+        result.clis.find((item) => item.id === fallback.id) || fallback
+      ));
+      setLocalClis(nextClis);
+      setCliDetectionState("success");
+      const availableLabels = nextClis
+        .filter((item) => item.available)
+        .map((item) => `${item.label}${item.version ? ` ${item.version}` : ""}`);
+      const text = availableLabels.length
+        ? `检测完成：${availableLabels.join("、")} 可用。`
+        : "未检测到可用的本机生成 CLI。";
+      setCliStatus({
+        state: availableLabels.length ? "success" : "error",
+        label: "本机 CLI 检测",
+        text,
+        commandPreview: "[cli] --version",
+        durationMs: null,
+        generatedAt: result.generatedAt,
+        code: availableLabels.length ? "" : "LOCAL_CLI_UNAVAILABLE",
+      });
+      if (availableLabels.length) setSuccess(text);
+      else setCustomError(text);
+    } catch (error) {
+      const message = error?.message || "本机 CLI 检测失败。";
+      setCliDetectionState("error");
+      setCliStatus({
+        state: "error",
+        label: "本机 CLI 检测",
+        text: message,
+        commandPreview: "",
+        durationMs: null,
+        generatedAt: "",
+        code: error?.code || "LOCAL_CLI_UNAVAILABLE",
+      });
+      setCustomError(message);
     }
+  };
+
+  const requireModelConfig = (channel) => {
+    const config = channelConfig(channel);
     if (config.provider === "cloud") {
-      if (!config.apiKey.trim() || !config.baseUrl.trim() || isCloudPlaceholderModel(config.modelName)) {
+      if (!config.modelName.trim() || !config.apiKey.trim() || !config.baseUrl.trim() || isCloudPlaceholderModel(config.modelName)) {
         setError("config");
         return false;
       }
@@ -310,6 +490,20 @@ export function App() {
         setCustomError("API Base URL 不是合法 URL。");
         return false;
       }
+    } else {
+      if (config.cliId === "custom" && !config.cliCommand.trim()) {
+        setCustomError("请填写自定义规范 CLI 的命令名或绝对路径。");
+        return false;
+      }
+      const selectedCli = localClis.find((item) => item.id === config.cliId);
+      if (selectedCli?.available === false) {
+        setCustomError(`${selectedCli.label} 当前不可用，请重新检测或选择其他 CLI。`);
+        return false;
+      }
+      if (selectedCli && !selectedCli.capabilities?.[channel]) {
+        setCustomError(`${selectedCli.label} 不支持${channel === "image" ? "图片" : "文本"}生成。`);
+        return false;
+      }
     }
     return true;
   };
@@ -319,17 +513,19 @@ export function App() {
   const requireImageModel = () => requireModelConfig("image");
 
   const providerLabel = (channel) => {
-    const config = modelConfig[channel];
+    const config = channelConfig(channel);
     if (config.provider === "cloud") {
       return channel === "image" ? "云端图片 API" : "云端文本 API";
     }
-    return channel === "image" ? "本地 Codex CLI imagegen" : "本地 Codex CLI";
+    const cli = localClis.find((item) => item.id === config.cliId);
+    return `本地 ${cli?.label || "CLI"}`;
   };
 
   const providerPreview = (channel) => {
-    const config = modelConfig[channel];
+    const config = channelConfig(channel);
     if (config.provider === "local") {
-      return "codex exec ...";
+      const cli = localClis.find((item) => item.id === config.cliId);
+      return cli?.commandPreview || "[cli] --prompt ...";
     }
     const endpoint = channel === "image" ? "/images/generations" : "/chat/completions";
     try {
@@ -347,9 +543,13 @@ export function App() {
   };
 
   const requestPayloadConfig = (channel) => {
-    const config = modelConfig[channel];
+    const config = channelConfig(channel);
     if (config.provider !== "cloud") {
-      return { modelName: config.modelName };
+      return {
+        cliId: config.cliId,
+        cliCommand: config.cliCommand,
+        modelName: config.modelName,
+      };
     }
 
     return {
@@ -368,7 +568,7 @@ export function App() {
 
   const requestTextItems = async (kind, payload = {}, contextOverrides = {}) => {
     const requestGeneration =
-      modelConfig.text.provider === "cloud" ? requestCloudGeneration : requestCodexGeneration;
+      channelConfig("text").provider === "cloud" ? requestCloudGeneration : requestLocalCliGeneration;
     const context = workflowContext(contextOverrides);
     const result = await requestGeneration({
       kind,
@@ -393,14 +593,14 @@ export function App() {
     const routeLabel = providerLabel("text");
     const decisionLabel = decisionLabels[decisionKind] ?? "候选项";
     const requestModelDecision =
-      modelConfig.text.provider === "cloud" ? requestCloudDecision : requestCodexDecision;
+      channelConfig("text").provider === "cloud" ? requestCloudDecision : requestLocalCliDecision;
     const context = workflowContext(contextOverrides);
 
     setGeneratingKind(`decision-${decisionKind}`);
     setCliStatus({
       state: "running",
       label: routeLabel,
-      text: `正在通过${routeLabel}选择${decisionLabel}...`,
+      text: `正在通过 ${routeLabel} 选择${decisionLabel}...`,
       commandPreview: providerPreview("text"),
       durationMs: null,
       generatedAt: "",
@@ -421,7 +621,7 @@ export function App() {
     setCliStatus({
       state: "success",
       label: routeLabel,
-      text: `${routeLabel}已选择${decisionLabel}：${result.reason}`,
+      text: `${routeLabel} 已选择${decisionLabel}：${result.reason}`,
       commandPreview: result.commandPreview,
       durationMs: result.durationMs,
       generatedAt: result.generatedAt,
@@ -433,7 +633,7 @@ export function App() {
 
   const requestCoverImageResult = async (prompt, selectedDraftValue, contextOverrides = {}) => {
     const requestCoverImage =
-      modelConfig.image.provider === "cloud" ? requestCloudCoverImage : requestCodexCoverImage;
+      channelConfig("image").provider === "cloud" ? requestCloudCoverImage : requestLocalCliCoverImage;
     const context = workflowContext(contextOverrides);
 
     return requestCoverImage({
@@ -453,7 +653,7 @@ export function App() {
     setCliStatus({
       state: "running",
       label: routeLabel,
-      text: `正在通过${routeLabel}生成${label}...`,
+      text: `正在通过 ${routeLabel} 生成${label}...`,
       commandPreview: providerPreview("text"),
       durationMs: null,
       generatedAt: "",
@@ -466,7 +666,7 @@ export function App() {
       setCliStatus({
         state: "success",
         label: routeLabel,
-        text: `${routeLabel}已生成 ${result.items.length} 条${label}。`,
+        text: `${routeLabel} 已生成 ${result.items.length} 条${label}。`,
         commandPreview: result.commandPreview,
         durationMs: result.durationMs,
         generatedAt: result.generatedAt,
@@ -603,7 +803,7 @@ export function App() {
     setSelectedPromptId(null);
     setCoverImage(null);
     setActiveStep("topics");
-    setSuccess(`已通过${result.routeLabel}生成 10 个选题。`);
+    setSuccess(`已通过 ${result.routeLabel} 生成 10 个选题。`);
   };
 
   const generateDrafts = async () => {
@@ -623,7 +823,7 @@ export function App() {
     setSelectedPromptId(null);
     setCoverImage(null);
     setActiveStep("drafts");
-    setSuccess(`已通过${result.routeLabel}生成 5 篇文案，可选择一篇继续生成封面 Prompt。`);
+    setSuccess(`已通过 ${result.routeLabel} 生成 5 篇文案，可选择一篇继续生成封面 Prompt。`);
   };
 
   const generatePrompts = async () => {
@@ -644,7 +844,7 @@ export function App() {
     setSelectedPromptId(nextPrompts[0].id);
     setCoverImage(null);
     setActiveStep("cover");
-    setSuccess(`已通过${result.routeLabel}生成 5 份封面 Prompt，默认不包含真人、脸、手和动物。`);
+    setSuccess(`已通过 ${result.routeLabel} 生成 5 份封面 Prompt，默认不包含真人、脸、手和动物。`);
   };
 
   const generateCoverImage = async (promptId = selectedPromptId) => {
@@ -661,7 +861,7 @@ export function App() {
     setCliStatus({
       state: "running",
       label: routeLabel,
-      text: `正在通过${routeLabel}生成封面图...`,
+      text: `正在通过 ${routeLabel} 生成封面图...`,
       commandPreview: providerPreview("image"),
       durationMs: null,
       generatedAt: "",
@@ -682,14 +882,14 @@ export function App() {
       setCliStatus({
         state: "success",
         label: routeLabel,
-        text: `${routeLabel}已生成封面图。`,
+        text: `${routeLabel} 已生成封面图。`,
         commandPreview: result.commandPreview,
         durationMs: result.durationMs,
         generatedAt: result.generatedAt,
         code: "",
       });
       setActiveStep("cover");
-      setSuccess(`已通过${routeLabel}生成封面图，原始 Prompt 已保留。`);
+      setSuccess(`已通过 ${routeLabel} 生成封面图，原始 Prompt 已保留。`);
     } catch (error) {
       const message = error?.message || `${routeLabel}封面图生成失败。`;
       setCliStatus({
@@ -780,7 +980,7 @@ export function App() {
       setCliStatus({
         state: "running",
         label: providerLabel("text"),
-        text: `自动化正在通过${providerLabel("text")}生成选题...`,
+        text: `自动化正在通过 ${providerLabel("text")} 生成选题...`,
         commandPreview: providerPreview("text"),
         durationMs: null,
         generatedAt: "",
@@ -793,7 +993,7 @@ export function App() {
       setCliStatus({
         state: "success",
         label: topicResult.routeLabel,
-        text: `${topicResult.routeLabel}已生成 ${nextTopics.length} 条选题，自动化将选择 1 条继续。`,
+        text: `${topicResult.routeLabel} 已生成 ${nextTopics.length} 条选题，自动化将选择 1 条继续。`,
         commandPreview: topicResult.commandPreview,
         durationMs: topicResult.durationMs,
         generatedAt: topicResult.generatedAt,
@@ -810,7 +1010,7 @@ export function App() {
       setCliStatus({
         state: "running",
         label: providerLabel("text"),
-        text: `自动化正在通过${providerLabel("text")}生成文案...`,
+        text: `自动化正在通过 ${providerLabel("text")} 生成文案...`,
         commandPreview: providerPreview("text"),
         durationMs: null,
         generatedAt: "",
@@ -823,7 +1023,7 @@ export function App() {
       setCliStatus({
         state: "success",
         label: draftResult.routeLabel,
-        text: `${draftResult.routeLabel}已生成 ${nextDrafts.length} 篇文案，自动化将选择 1 篇继续。`,
+        text: `${draftResult.routeLabel} 已生成 ${nextDrafts.length} 篇文案，自动化将选择 1 篇继续。`,
         commandPreview: draftResult.commandPreview,
         durationMs: draftResult.durationMs,
         generatedAt: draftResult.generatedAt,
@@ -842,7 +1042,7 @@ export function App() {
       setCliStatus({
         state: "running",
         label: providerLabel("text"),
-        text: `自动化正在通过${providerLabel("text")}生成封面 Prompt...`,
+        text: `自动化正在通过 ${providerLabel("text")} 生成封面 Prompt...`,
         commandPreview: providerPreview("text"),
         durationMs: null,
         generatedAt: "",
@@ -859,7 +1059,7 @@ export function App() {
       setCliStatus({
         state: "success",
         label: promptResult.routeLabel,
-        text: `${promptResult.routeLabel}已生成 ${nextPrompts.length} 份封面 Prompt，自动化将选择 1 份生成封面图。`,
+        text: `${promptResult.routeLabel} 已生成 ${nextPrompts.length} 份封面 Prompt，自动化将选择 1 份生成封面图。`,
         commandPreview: promptResult.commandPreview,
         durationMs: promptResult.durationMs,
         generatedAt: promptResult.generatedAt,
@@ -1361,18 +1561,26 @@ export function App() {
             <p>文案生成与图片生成分开配置，字段会自动缓存。</p>
             <div className="model-route-list">
               <ModelConfig
+                channel="text"
                 title="文案生成"
                 icon="文"
                 tone="mint"
-                value={modelConfig.text}
+                value={channelConfig("text")}
                 onChange={(value) => updateModelConfig("text", value)}
+                localClis={localClis}
+                detectionState={cliDetectionState}
+                onDetect={detectConfiguredClis}
               />
               <ModelConfig
+                channel="image"
                 title="图片生成"
                 icon="图"
                 tone="pink"
-                value={modelConfig.image}
+                value={channelConfig("image")}
                 onChange={(value) => updateModelConfig("image", value)}
+                localClis={localClis}
+                detectionState={cliDetectionState}
+                onDetect={detectConfiguredClis}
               />
             </div>
           </section>

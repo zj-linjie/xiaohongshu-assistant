@@ -100,12 +100,16 @@ export async function runCodex({ prompt, modelName }) {
 
         const durationMs = Date.now() - startedAt;
         if (code !== 0) {
+          const details = stderr.trim() || stdout.trim();
+          const requiresUpdate = /requires a newer version of Codex|upgrade to the latest app or CLI/i.test(details);
           reject(
             new CodexApiError(
-              "CODEX_FAILED",
-              `Codex CLI 执行失败，退出码 ${code}。`,
+              requiresUpdate ? "CODEX_UPDATE_REQUIRED" : "CODEX_FAILED",
+              requiresUpdate
+                ? "Codex CLI 版本过旧，无法使用当前模型。请先在终端运行 `codex update`，再重新生成。"
+                : `Codex CLI 执行失败，退出码 ${code}。`,
               502,
-              stderr.trim() || stdout.trim(),
+              details,
             ),
           );
           return;

@@ -97,7 +97,7 @@ export function validateDecisionRequest(payload) {
 
 function assertString(value, fieldName) {
   if (typeof value !== "string" || !value.trim()) {
-    throw new CodexApiError("CODEX_BAD_JSON", `Codex 返回缺少字段：${fieldName}。`, 502);
+    throw new CodexApiError("CODEX_BAD_JSON", `模型返回缺少字段：${fieldName}。`, 502);
   }
   return value.trim();
 }
@@ -115,7 +115,7 @@ function pickString(item, fieldNames) {
 function assertStringField(item, fieldNames, fieldName) {
   const value = pickString(item, fieldNames);
   if (!value) {
-    throw new CodexApiError("CODEX_BAD_JSON", `Codex 返回缺少字段：${fieldName}。`, 502);
+    throw new CodexApiError("CODEX_BAD_JSON", `模型返回缺少字段：${fieldName}。`, 502);
   }
   return value;
 }
@@ -144,22 +144,43 @@ function normalizeTopic(item, index) {
 }
 
 function normalizeDraft(item, index, topicTitle) {
-  const body = assertString(item.body, "body");
+  const title = assertStringField(item, ["title", "标题", "文案标题", "copyTitle"], "title");
+  const body = assertStringField(
+    item,
+    ["body", "正文", "文案正文", "content", "copy", "copyBody"],
+    "body",
+  );
   if (!/#.+?\[话题\]#/.test(body)) {
-    throw new CodexApiError("CODEX_BAD_JSON", "Codex 返回的文案正文缺少小红书话题标签。", 502);
+    throw new CodexApiError("CODEX_BAD_JSON", "模型返回的文案正文缺少小红书话题标签。", 502);
   }
+
+  const coverDirection = pickString(item, [
+    "coverDirection",
+    "cover_direction",
+    "coverDirectionSuggestion",
+    "cover_direction_suggestion",
+    "coverSuggestion",
+    "封面方向",
+    "封面方向建议",
+    "封面建议",
+  ]) || `围绕「${title}」制作信息清晰的静物封面，突出核心方法与关键词。`;
 
   return {
     id: `draft-${index + 1}`,
-    title: assertString(item.title, "title"),
+    title,
     body,
-    coverDirection: assertString(item.coverDirection, "coverDirection"),
+    coverDirection,
     topicTitle,
   };
 }
 
 function normalizePrompt(item, index) {
-  const prompt = assertString(item.prompt, "prompt");
+  const title = assertStringField(item, ["title", "标题", "封面标题", "promptTitle"], "title");
+  const prompt = assertStringField(
+    item,
+    ["prompt", "coverPrompt", "cover_prompt", "imagePrompt", "image_prompt", "封面Prompt", "封面提示词", "提示词"],
+    "prompt",
+  );
   const hasBoundary =
     /(真人|人物|人像|人类|模特|people|person|human|portrait)/i.test(prompt) &&
     /(脸|面部|面孔|五官|face|facial)/i.test(prompt) &&
@@ -167,12 +188,12 @@ function normalizePrompt(item, index) {
     /(动物|宠物|animal|pet)/i.test(prompt);
 
   if (!hasBoundary) {
-    throw new CodexApiError("CODEX_BAD_JSON", "Codex 返回的封面 Prompt 未明确排除真人、脸、手和动物。", 502);
+    throw new CodexApiError("CODEX_BAD_JSON", "模型返回的封面 Prompt 未明确排除真人、脸、手和动物。", 502);
   }
 
   return {
     id: `prompt-${index + 1}`,
-    title: assertString(item.title, "title"),
+    title,
     prompt,
   };
 }
@@ -180,7 +201,7 @@ function normalizePrompt(item, index) {
 export function parseJsonFromCodex(raw) {
   const text = String(raw ?? "").trim();
   if (!text) {
-    throw new CodexApiError("CODEX_BAD_JSON", "Codex 没有返回内容。", 502);
+    throw new CodexApiError("CODEX_BAD_JSON", "模型没有返回内容。", 502);
   }
 
   try {
@@ -197,7 +218,7 @@ export function parseJsonFromCodex(raw) {
     }
   }
 
-  throw new CodexApiError("CODEX_BAD_JSON", "Codex 返回内容不是合法 JSON。", 502, text.slice(0, 600));
+  throw new CodexApiError("CODEX_BAD_JSON", "模型返回内容不是合法 JSON。", 502, text.slice(0, 600));
 }
 
 export function normalizeDecisionResult(parsed, payload) {
@@ -245,14 +266,14 @@ export function normalizeDecisionResult(parsed, payload) {
 
 export function normalizeCodexItems(kind, parsed, payload) {
   if (!parsed || !Array.isArray(parsed.items)) {
-    throw new CodexApiError("CODEX_BAD_JSON", "Codex JSON 必须包含 items 数组。", 502);
+    throw new CodexApiError("CODEX_BAD_JSON", "模型 JSON 必须包含 items 数组。", 502);
   }
 
   const expectedCount = kind === "topics" ? 10 : 5;
   if (parsed.items.length !== expectedCount) {
     throw new CodexApiError(
       "CODEX_BAD_JSON",
-      `Codex 返回数量不正确：需要 ${expectedCount} 条，实际 ${parsed.items.length} 条。`,
+      `模型返回数量不正确：需要 ${expectedCount} 条，实际 ${parsed.items.length} 条。`,
       502,
     );
   }

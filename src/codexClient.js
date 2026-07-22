@@ -40,6 +40,30 @@ export async function requestCodexGeneration(payload) {
   );
 }
 
+export async function requestLocalCliDetection(payload = {}) {
+  return requestJson(
+    "/api/local-cli/detect",
+    payload,
+    {
+      nonJson: "本地 CLI 检测服务返回了非 JSON 内容。",
+      failed: "本地 CLI 检测失败。",
+    },
+    "LOCAL_CLI_BAD_JSON",
+  );
+}
+
+export async function requestLocalCliGeneration(payload) {
+  return requestJson(
+    "/api/local-cli/generate",
+    payload,
+    {
+      nonJson: "本地 CLI 生成服务返回了非 JSON 内容。",
+      failed: "本地 CLI 生成失败。",
+    },
+    "LOCAL_CLI_BAD_JSON",
+  );
+}
+
 export async function requestCloudGeneration(payload) {
   return requestJson(
     "/api/cloud/generate",
@@ -64,6 +88,18 @@ export async function requestCodexDecision(payload) {
   );
 }
 
+export async function requestLocalCliDecision(payload) {
+  return requestJson(
+    "/api/local-cli/decide",
+    payload,
+    {
+      nonJson: "本地 CLI 决策服务返回了非 JSON 内容。",
+      failed: "本地 CLI 决策失败。",
+    },
+    "LOCAL_CLI_BAD_JSON",
+  );
+}
+
 export async function requestCloudDecision(payload) {
   return requestJson(
     "/api/cloud/decide",
@@ -85,6 +121,18 @@ export async function requestCodexCoverImage(payload) {
       failed: "Codex CLI 封面图生成失败。",
     },
     "CODEX_BAD_JSON",
+  );
+}
+
+export async function requestLocalCliCoverImage(payload) {
+  return requestJson(
+    "/api/local-cli/cover-image",
+    payload,
+    {
+      nonJson: "本地 CLI 封面图服务返回了非 JSON 内容。",
+      failed: "本地 CLI 封面图生成失败。",
+    },
+    "LOCAL_CLI_BAD_JSON",
   );
 }
 
