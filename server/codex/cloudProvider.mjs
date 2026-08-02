@@ -325,8 +325,6 @@ function imageBody({ payload, modelName }) {
     prompt: buildCoverImagePrompt(payload),
     n: 1,
     size: "1024x1536",
-    response_format: "b64_json",
-    output_format: "png",
   };
 }
 
