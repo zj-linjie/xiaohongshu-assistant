@@ -5,7 +5,7 @@ import { CodexApiError } from "../codex/validation.mjs";
 
 const DEFAULT_XHS_CLI_COMMAND = "xhs";
 const DEFAULT_COOKIE_SOURCE = "none";
-const TIMEOUT_MS = 60_000;
+const TIMEOUT_MS = 150_000;
 const MAX_DETAILS_CHARS = 800;
 const VALID_SORTS = new Set(["general", "popular", "latest"]);
 const VALID_TYPES = new Set(["all", "video", "image"]);
@@ -275,20 +275,16 @@ export function validateXhsSearchRequest(payload) {
 }
 
 export async function runXhsSearch(payload) {
-  const cliCommand = process.env.XHS_CLI_COMMAND || DEFAULT_XHS_CLI_COMMAND;
+  const cliCommand = process.env.XHS_CLI_COMMAND || "opencli";
   const cookieSource = process.env.XHS_COOKIE_SOURCE || DEFAULT_COOKIE_SOURCE;
   const args = [
-    "--cookie-source",
-    cookieSource,
+    "xiaohongshu",
     "search",
     payload.keyword,
-    "--sort",
-    payload.sort,
-    "--type",
-    payload.type,
-    "--page",
-    String(payload.page),
-    "--json",
+    "-f", "json",
+    "--limit", String(Math.min(parseInt(payload.page, 10) || 1, 20) * 20),
+    "--window", "background",
+    "--keep-tab", "false",
   ];
   const startedAt = new Date();
   const startedAtMs = Date.now();
@@ -296,7 +292,7 @@ export async function runXhsSearch(payload) {
   const result = await new Promise((resolve, reject) => {
     const child = spawn(cliCommand, args, {
       cwd: repoRoot,
-      env: { ...process.env, OUTPUT: "json" },
+      env: process.env,
       stdio: ["ignore", "pipe", "pipe"],
     });
 
@@ -338,11 +334,51 @@ export async function runXhsSearch(payload) {
       clearTimeout(timer);
 
       try {
-        const envelope = parseJsonOutput(stdout);
-        const normalized = normalizeSearchData(envelope, payload, startedAt);
-        if (code !== 0 && envelope.ok !== true) {
-          mapCliError(envelope.error);
+        const text = stdout.trim();
+        if (!text) {
+          throw new CodexApiError("XHS_BAD_JSON", "xhs CLI 没有返回 JSON 内容。", 502);
         }
+        let items;
+        try {
+          items = JSON.parse(text);
+        } catch {
+          const start = text.indexOf("[");
+          const end = text.lastIndexOf("]");
+          if (start >= 0 && end > start) {
+            items = JSON.parse(text.slice(start, end + 1));
+          } else {
+            throw new CodexApiError("XHS_BAD_JSON", "xhs CLI 返回内容不是合法 JSON。", 502, sanitizeDetails(text));
+          }
+        }
+        if (!Array.isArray(items)) {
+          throw new CodexApiError("XHS_BAD_JSON", "xhs CLI 返回内容不是 JSON 数组。", 502);
+        }
+        const lookupTime = formatLookupTime(startedAt);
+        const normalizedItems = items
+          .map((item, index) => {
+            const noteId = item.url ? extractNoteId(item.url) : "";
+            const title = clip(String(item.title || ""), 80);
+            const excerpt = clip(String(item.desc || item.title || ""), 180);
+            const likesVal = parseInt(String(item.likes || "0"), 10) || 0;
+            return {
+              id: `xhs-${payload.page}-${index + 1}-${noteId || "unknown"}`,
+              title,
+              excerpt,
+              tags: [],
+              metrics: likesVal ? `赞 ${formatCount(likesVal)}` : "互动数据暂未返回",
+              source: noteId ? `search_result/${noteId}` : `search_result/${payload.page}-${index + 1}`,
+              noteId: noteId || `unknown-${index}`,
+              noteType: item.note_type || "image",
+              author: clip(String(item.author || "未知作者"), 40),
+              keyword: payload.keyword,
+              lookupTime,
+            };
+          })
+          .filter((item) => item.title || item.noteId);
+        const normalized = {
+          items: normalizedItems,
+          hasMore: normalizedItems.length >= 20,
+        };
         if (code !== 0) {
           throw new CodexApiError(
             "XHS_FAILED",
@@ -363,4 +399,10 @@ export async function runXhsSearch(payload) {
     commandPreview: commandPreview(cliCommand, args),
     durationMs: Date.now() - startedAtMs,
   };
+}
+
+function extractNoteId(url) {
+  if (!url) return "";
+  const m = String(url).match(/search_result\/([a-f0-9]+)/i);
+  return m ? m[1] : "";
 }
