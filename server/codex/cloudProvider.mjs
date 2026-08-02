@@ -211,7 +211,7 @@ function extractGeneratedText(json) {
 
   throw new CodexApiError(
     "API_UNSUPPORTED_RESPONSE",
-    "云端 API 返回结构不受支持：未找到 choices[0].message.content。",
+    "云端 API 返回结构不受支持：未找到 choices[0].message.content。请确认所选模型为文本生成模型（如 claude-sonnet、gpt-4 等），而非图片生成模型。",
     502,
   );
 }

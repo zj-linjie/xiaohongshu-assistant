@@ -218,7 +218,7 @@ export function parseJsonFromCodex(raw) {
     }
   }
 
-  throw new CodexApiError("CODEX_BAD_JSON", "模型返回内容不是合法 JSON。", 502, text.slice(0, 600));
+  throw new CodexApiError("CODEX_BAD_JSON", "模型返回内容不是合法 JSON。", 502, text.slice(0, 800));
 }
 
 export function normalizeDecisionResult(parsed, payload) {
